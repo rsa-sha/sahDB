@@ -1,0 +1,7 @@
+# object files generated during build
+*.o
+# executables
+*DB
+# archive and test
+archive*
+tests*
