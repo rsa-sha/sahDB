@@ -29,19 +29,29 @@ typedef struct CommandNode{
     func_ptr func;
 } commandNode;
 
-#define N_COMMANDS 4
-
+#define N_COMMANDS 5
+/*
+ * HELP     -> Display generic and specific help for stuff
+ * SET      -> Modify/Add value for a given key
+ * GET      -> Fetch value for a given key
+ * EXISTS   -> Check if a key exists in DB
+ * DELETE   -> Remove key and corresponding entry from DB
+*/
 
 /********** HELP COMMAND **********/
 err_t help();
 
-
-
 /********** SET COMMAND **********/
 err_t set_key_val(int argc, char **cmd_arr);
 
-
 /********** GET COMMAND **********/
 err_t get_val_from_key(int argc, char **cmd_arr);
+
+/******** EXISTS COMMAND *********/
+err_t key_exists(int argc, char **cmd_arr);
+
+/********* DELETE COMMAND ********/
+err_t delete_key_val(int argc, char **cmd_arr);
+
 
 #endif

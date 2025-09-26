@@ -23,7 +23,7 @@ err_t processCommand(char *req){
     }
     if(i==N_COMMANDS && handler == NULL){
         char resp[MAX_RESP_LEN];
-        sprintf(resp, "Command %s not a supported CMD. Use HELP cmd to know more", cmd_arr[0]);
+        sprintf(resp, "%s%sCommand %s not a supported CMD. Use HELP cmd to know more%s", BOLD, YELLOW, cmd_arr[0], RESET);
         send_info_to_user(resp);
         res = -1;
         goto ret;
@@ -40,15 +40,14 @@ ret:
 err_t getAndProcessCommand(){
     char cmd[MAX_CMD_LEN];
     err_t res = get_user_input(cmd);
-    if (res){
+    // cmd string is null|escape seq.
+    if(cmd[0]=='\0' || isalnum(cmd[0])==0 || res){
         char output[MAX_RESP_LEN];
-        sprintf(output, "Invalid operation requested");
+        sprintf(output, "%s%sInvalid operation requested%s", BOLD, RED, RESET);
         send_info_to_user(output);
     } else {
         // we'll process cmd
         res = processCommand(cmd);
-        // send_info_to_user(cmd);
-        // TODO: Responses will be sent from *_helper methods
     }
 ret:
     return res;

@@ -8,7 +8,7 @@ CFLAGS = -Wall -Wextra -g
 TARGET = sahDB
 
 # Object files
-OBJS = db.o main.o common.o command.o
+OBJS = db.o main.o common.o command.o hash.o
 
 # Default target
 all: $(TARGET)
@@ -28,6 +28,10 @@ common.o: common.c common.h
 # Rule to compile command.h into command.o
 command.o: command.c command.h
 	$(CC) $(CFLAGS) -c command.c
+
+# Rule to compile hash.h into hash.o
+hash.o: hash.c hash.h
+	$(CC) $(CFLAGS) -c hash.c
 
 # Rule to compile main.c into main.o
 main.o: main.c db.h

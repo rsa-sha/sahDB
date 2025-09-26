@@ -5,3 +5,6 @@
 # archive and test
 archive*
 tests*
+# tags and cscope
+*cscope*
+*tags*

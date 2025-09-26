@@ -1,8 +1,10 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -20,6 +22,7 @@ err_t tokenize(char *in, char **tokens);
 
 // FORMATTING
 #define RED     "\033[31m"
+#define YELLOW  "\033[33m"
 #define GREEN   "\033[32m"
 #define BOLD    "\033[1m"
 #define RESET   "\033[0m"

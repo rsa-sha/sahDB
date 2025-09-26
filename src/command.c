@@ -98,27 +98,57 @@ ret:
 }
 
 // HELP CMD methods
-void print_commands(){
+err_t help(){
     char resp[MAX_RESP_LEN];
     char set[100];
     sprintf(set, "%sSET%s - %s%skey val%s", BOLD, RESET, BOLD, GREEN, RESET);
+    char exists[100];
+    sprintf(exists, "%sEXISTS%s - %s%skey%s", BOLD, RESET, BOLD, GREEN, RESET);
     char get[100];
     sprintf(get, "%sGET%s - %s%skey%s", BOLD, RESET, BOLD, GREEN, RESET);
     char help[100];
     sprintf(help, "%sHELP%s", BOLD, RESET);
-    sprintf(resp, "%s\n%s\n%s", help, set, get);
+    sprintf(resp, "%s\n%s\n%s\n%s", help, set, exists, get);
     send_info_to_user(resp);
+    return 0;
 }
 
 err_t help_helper(int argc, char** cmd_arr){
     // this method prints out commands and usage
     // if(argc==0){
-    print_commands();
+    help();
     // } else if(argc == 2 && strcmp(cmd_arr[1],"")!=0){
     //     printSubCommands(cmd_arr[1]);
     // }
     return 0;
 }
+
+// EXISTS CMD
+err_t exists_helper(int argc, char** cmd_arg){
+    // check if key is present in the page
+    char resp[100];
+    err_t res = 0;
+    if(argc!=2){
+        sprintf(resp, "%sIncorrect number of args passed, run HELP GET%s", RED, RESET);
+        res = -1;
+        goto ret;
+    }
+    char *key = cmd_arg[1];
+    for(int i=0;i<p.num_records;i++){
+        if( strcmp(p.records[i].key, key) == 0){
+            sprintf(resp, "%s%sTRUE%s", BOLD, GREEN, RESET);
+            goto ret;
+        }
+    }
+    sprintf(resp, "%s%sFALSE%s", BOLD, RED, RESET);
+    res = 1;
+ret:
+    send_info_to_user(resp);
+    return res;
+}
+
+// DELETE CMD
+
 
 /*############################################
 ################ Commands end ################
@@ -128,6 +158,7 @@ err_t help_helper(int argc, char** cmd_arr){
 commandNode commands[] = {
     {"HELP", NULL, true, 0, help_helper},
     {"SET", NULL, true, 0, set_key_val_helper},
+    {"EXISTS", NULL, true, 0, exists_helper},
     {"GET", NULL, true, 0, get_val_from_key_helper},
     {"EXIT", NULL, true, 0, exit_helper},
 };
