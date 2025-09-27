@@ -1,5 +1,6 @@
 #include "command.h"
 #include "common.h"
+#include "hash.h"
 
 // Page
 Page p;
@@ -10,6 +11,12 @@ Page p;
 
 err_t exit_helper(int argc, char** cmd_arr){
     char resp[MAX_RESP_LEN];
+    if(argc!=1){
+        char err[100];
+        sprintf(err, "%sIncorrect number of args passed, run HELP EXIT%s", RED, RESET);
+        send_info_to_user(err);
+        return -1;
+    }
     sprintf(resp, "%s%sExiting ...%s", RED, BOLD, RESET);
     send_info_to_user(resp);
     return SIG_EXIT;
@@ -57,7 +64,8 @@ err_t set_key_val_helper(int argc, char** cmd_arr){
     }
     char *key = cmd_arr[1];
     char *val = cmd_arr[2];
-    res = set_kv(key, val);
+    // res = set_kv(key, val);
+    res = hash_insert(key, val);
 ret:
     return res;
 }
@@ -92,7 +100,8 @@ err_t get_val_from_key_helper(int argc, char **cmd_arr){
         goto ret;
     }
     char *key = cmd_arr[1];
-    res = get_kv(key);
+    // res = get_kv(key);
+    res = hash_get(key);
 ret:
     return res;
 }
@@ -106,20 +115,29 @@ err_t help(){
     sprintf(exists, "%sEXISTS%s - %s%skey%s", BOLD, RESET, BOLD, GREEN, RESET);
     char get[100];
     sprintf(get, "%sGET%s - %s%skey%s", BOLD, RESET, BOLD, GREEN, RESET);
-    char help[100];
+    char delete[100];
+    sprintf(delete, "%sDELETE%s - %s%skey%s", BOLD, RESET, BOLD, GREEN, RESET);
+    char help[500];
     sprintf(help, "%sHELP%s", BOLD, RESET);
-    sprintf(resp, "%s\n%s\n%s\n%s", help, set, exists, get);
+    sprintf(resp, "%s\n%s\n%s\n%s\n%s", help, set, exists, get, delete);
+    send_info_to_user(resp);
+    return 0;
+}
+
+err_t printSubCommands(char *arg){
+    char resp[50];
+    sprintf(resp, "%sNot support subcmd print for %s yet%s", RED, arg, RESET);
     send_info_to_user(resp);
     return 0;
 }
 
 err_t help_helper(int argc, char** cmd_arr){
     // this method prints out commands and usage
-    // if(argc==0){
-    help();
-    // } else if(argc == 2 && strcmp(cmd_arr[1],"")!=0){
-    //     printSubCommands(cmd_arr[1]);
-    // }
+    if(argc==1){
+        help();
+    } else if(argc == 2 && strcmp(cmd_arr[1],"")!=0){
+        printSubCommands(cmd_arr[1]);
+    }
     return 0;
 }
 
@@ -129,26 +147,41 @@ err_t exists_helper(int argc, char** cmd_arg){
     char resp[100];
     err_t res = 0;
     if(argc!=2){
-        sprintf(resp, "%sIncorrect number of args passed, run HELP GET%s", RED, RESET);
+        sprintf(resp, "%sIncorrect number of args passed, run HELP EXISTS%s", RED, RESET);
+        send_info_to_user(resp);
         res = -1;
         goto ret;
     }
     char *key = cmd_arg[1];
-    for(int i=0;i<p.num_records;i++){
-        if( strcmp(p.records[i].key, key) == 0){
-            sprintf(resp, "%s%sTRUE%s", BOLD, GREEN, RESET);
-            goto ret;
-        }
-    }
-    sprintf(resp, "%s%sFALSE%s", BOLD, RED, RESET);
-    res = 1;
+    // for(int i=0;i<p.num_records;i++){
+    //     if( strcmp(p.records[i].key, key) == 0){
+    //         sprintf(resp, "%s%sTRUE%s", BOLD, GREEN, RESET);
+    //         goto ret;
+    //     }
+    // }
+    // sprintf(resp, "%s%sFALSE%s", BOLD, RED, RESET);
+    // res = 1;
+    res = hash_exists(key);
 ret:
-    send_info_to_user(resp);
     return res;
 }
 
 // DELETE CMD
-
+err_t delete_key_value_helper(int argc, char** cmd_arg){
+    // check if key is present in the page
+    char resp[100];
+    err_t res = 0;
+    if(argc!=2){
+        sprintf(resp, "%sIncorrect number of args passed, run HELP DELETE%s", RED, RESET);
+        send_info_to_user(resp);
+        res = -1;
+        goto ret;
+    }
+    char *key = cmd_arg[1];
+    res = hash_delete(key);
+ret:
+    return res;
+}
 
 /*############################################
 ################ Commands end ################
@@ -160,5 +193,6 @@ commandNode commands[] = {
     {"SET", NULL, true, 0, set_key_val_helper},
     {"EXISTS", NULL, true, 0, exists_helper},
     {"GET", NULL, true, 0, get_val_from_key_helper},
+    {"DELETE", NULL, true, 0, delete_key_value_helper},
     {"EXIT", NULL, true, 0, exit_helper},
 };

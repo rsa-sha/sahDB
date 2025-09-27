@@ -29,13 +29,14 @@ typedef struct CommandNode{
     func_ptr func;
 } commandNode;
 
-#define N_COMMANDS 5
+#define N_COMMANDS 6
 /*
  * HELP     -> Display generic and specific help for stuff
  * SET      -> Modify/Add value for a given key
  * GET      -> Fetch value for a given key
  * EXISTS   -> Check if a key exists in DB
  * DELETE   -> Remove key and corresponding entry from DB
+ * EXIT     -> Exit out of the DB process
 */
 
 /********** HELP COMMAND **********/

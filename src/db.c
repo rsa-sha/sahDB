@@ -45,6 +45,7 @@ err_t getAndProcessCommand(){
         char output[MAX_RESP_LEN];
         sprintf(output, "%s%sInvalid operation requested%s", BOLD, RED, RESET);
         send_info_to_user(output);
+        goto ret;
     } else {
         // we'll process cmd
         res = processCommand(cmd);
