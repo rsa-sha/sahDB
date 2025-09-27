@@ -8,3 +8,7 @@ tests*
 # tags and cscope
 *cscope*
 *tags*
+
+# Python cache and debug logs
+__pycache__/
+**/pexpect.debug.log*
