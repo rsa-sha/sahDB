@@ -14,7 +14,7 @@ class TestDB:
         idx = self.bin.expect('sahDB>')
         self.bin.sendline(cmd)
         # time.sleep(0.05)
-        idx = self.bin.expect([expect], timeout = 5)
+        idx = self.bin.expect(expect, timeout = 5)
         if idx == 0:
             return True
         else:

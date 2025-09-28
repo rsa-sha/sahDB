@@ -15,14 +15,14 @@ static uint64_t string_folding_hash(char* k){
 
 static err_t add_kv_in_arr(int idx, Entry *e){
     if(ht->count + 1 >= ht->size)
-        return -1;
+        return ERR_FULL;
     Entry* temp = ht->buckets[idx];
     if(temp==NULL){
         ht->buckets[idx] = e;
         ht->count++;
         return 0;
     }
-    while(temp->next!=NULL && strcmp(temp->key, temp->key)!=0){
+    while(temp->next!=NULL && strcmp(temp->key, e->key)!=0){
         temp = temp->next;
     }
     // check if a KV is being update
@@ -120,8 +120,11 @@ int hash_insert(char* k, char* v){
     kv->value = strdup(v);
     err_t res = add_kv_in_arr(idx, kv);
     char resp[MAX_RESP_LEN];
-    sprintf(resp, "Added key %s and value %s in DB",
-        ht->buckets[idx]->key, ht->buckets[idx]->value);
+    if (res==0)
+        sprintf(resp, "Added key %s and value %s in DB",
+            kv->key, kv->value);
+    else if(res==ERR_FULL)
+        sprintf(resp, "DB storage is full");
     send_info_to_user(resp);
     return res;
 }

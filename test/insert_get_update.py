@@ -8,10 +8,14 @@ def run_tests(t):
         key = f"key_{i}"
         value = f"value_{i}"
         cmd = f"SET {key} {value}"
-        expected_str = f"Added key {key} and value {value} in DB"
+        expected_str = [
+            f"Added key {key} and value {value} in DB",
+            "DB storage is full"]
         ret = t.exec_cmd(cmd, expected_str)
         if not ret:
             print(f"Failed for key =>{key}, value => {value}")
+        else:
+            print(f"Added key =>{key}, value => {value}")
 
 
 
