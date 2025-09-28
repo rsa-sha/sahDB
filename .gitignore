@@ -9,6 +9,11 @@ tests*
 *cscope*
 *tags*
 
-# Python cache and debug logs
+# Python cache directories
 __pycache__/
-**/pexpect.debug.log*
+*.py[cod]
+*$py.class
+
+# Python debug logs
+pexpect.debug.log
+**/pexpect.debug.log
