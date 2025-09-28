@@ -9,6 +9,7 @@
 #include <string.h>
 
 #define err_t int
+#define ERR_FULL 100
 // IO_Related Methods
 #define MAX_CMD_LEN 512
 #define MAX_CMD_PARAMS 16
