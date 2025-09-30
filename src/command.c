@@ -1,6 +1,7 @@
 #include "command.h"
 #include "common.h"
 #include "hash.h"
+#include "dbsave.h"
 
 // Page
 Page p;
@@ -106,20 +107,27 @@ ret:
     return res;
 }
 
+// for use in help, defined in last of file
+extern commandNode commands[];
 // HELP CMD methods
 err_t help(){
     char resp[MAX_RESP_LEN];
-    char set[100];
-    sprintf(set, "%sSET%s - %s%skey val%s", BOLD, RESET, BOLD, GREEN, RESET);
-    char exists[100];
-    sprintf(exists, "%sEXISTS%s - %s%skey%s", BOLD, RESET, BOLD, GREEN, RESET);
-    char get[100];
-    sprintf(get, "%sGET%s - %s%skey%s", BOLD, RESET, BOLD, GREEN, RESET);
-    char delete[100];
-    sprintf(delete, "%sDELETE%s - %s%skey%s", BOLD, RESET, BOLD, GREEN, RESET);
-    char help[500];
-    sprintf(help, "%sHELP%s", BOLD, RESET);
-    sprintf(resp, "%s\n%s\n%s\n%s\n%s", help, set, exists, get, delete);
+    int resp_idx = 0;
+    int idx;
+    for(int j=0; j<N_COMMANDS; j++){
+        idx = 0;
+        char *cmd = commands[j].name;
+        while(cmd[idx]!='\0')
+            resp[resp_idx++] = cmd[idx++];
+        resp[resp_idx++] = '\t';
+        idx = 0;
+        char *usage = commands[j].usage;
+        while(usage[idx]!='\0')
+            resp[resp_idx++] = usage[idx++];
+        resp[resp_idx++] = '\n';
+    }
+    // multiple endline fix
+    resp[resp_idx-1] = '\0';
     send_info_to_user(resp);
     return 0;
 }
@@ -183,16 +191,46 @@ ret:
     return res;
 }
 
+// SAVE CMD
+err_t save_helper(int argc, char** cmd_arg){
+    char resp[100];
+    err_t res = 0;
+    if(argc!=1){
+        sprintf(resp, "%sIncorrect number of args passed, run HELP SAVE%s", RED, RESET);
+        send_info_to_user(resp);
+        res = -1;
+        goto ret;
+    }
+    res = fetch_dataset_from_memory();
+ret:
+    return res;
+}
+
 /*############################################
 ################ Commands end ################
 ############################################*/
 
 //TODO: build Commands array trees
 commandNode commands[] = {
-    {"HELP", NULL, true, 0, help_helper},
-    {"SET", NULL, true, 0, set_key_val_helper},
-    {"EXISTS", NULL, true, 0, exists_helper},
-    {"GET", NULL, true, 0, get_val_from_key_helper},
-    {"DELETE", NULL, true, 0, delete_key_value_helper},
-    {"EXIT", NULL, true, 0, exit_helper},
+    {"HELP", NULL, true, 0, help_helper,
+        "Display the help menu                      : " BOLD GREEN "HELP" RESET
+    },
+    {"SET", NULL, true, 0, set_key_val_helper,
+        "Add/Update Key-Value pair in the dataset   : " BOLD GREEN "SET key val" RESET
+    },
+    {"EXISTS", NULL, true, 0, exists_helper,
+        "Check if a key exits in dataset            : " BOLD GREEN "EXISTS key" RESET
+    },
+    {"GET", NULL, true, 0, get_val_from_key_helper,
+        "Print the value corresponding to a key     : " BOLD GREEN "GET key" RESET
+    },
+    {"DELETE", NULL, true, 0, delete_key_value_helper,
+        "Remove Key-Value pair from the dataset     : " BOLD RED "DELETE key" RESET
+    },
+    {"SAVE", NULL, true, 0, save_helper,
+        "Save the data from dataset to file         : " BOLD GREEN "SAVE" RESET
+    },
+    {"EXIT", NULL, true, 0, exit_helper,
+        "EXIT the db process                        : " BOLD RED "EXIT" RESET
+    },
 };

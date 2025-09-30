@@ -4,11 +4,17 @@ CC = gcc
 # Compiler flags
 CFLAGS = -Wall -Wextra -g
 
-# Output executable
-TARGET = sahDB
+# Output dir
+BUILD_DIR = ../build
 
+# Output executable
+TARGET = $(BUILD_DIR)/sahDB
+
+
+# Source file
+SRCS = db.c main.c common.c command.c hash.c dbsave.c
 # Object files
-OBJS = db.o main.o common.o command.o hash.o
+OBJS = $(addprefix $(BUILD_DIR)/, $(SRCS:.c=.o))
 
 # Default target
 all: $(TARGET)
@@ -17,29 +23,14 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET)
 
-# Rule to compile db.c into db.o
-db.o: db.c db.h
-	$(CC) $(CFLAGS) -c db.c
-
-# Rule to compile common.h into common.o
-common.o: common.c common.h
-	$(CC) $(CFLAGS) -c common.c
-
-# Rule to compile command.h into command.o
-command.o: command.c command.h
-	$(CC) $(CFLAGS) -c command.c
-
-# Rule to compile hash.h into hash.o
-hash.o: hash.c hash.h
-	$(CC) $(CFLAGS) -c hash.c
-
-# Rule to compile main.c into main.o
-main.o: main.c db.h
-	$(CC) $(CFLAGS) -c main.c
+# Compile each .c file to .o
+$(BUILD_DIR)/%.o: %.c
+	@mkdir -p $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # Clean up compiled files
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(BUILD_DIR)/*.o $(TARGET)
 
 # Phony targets (not actual files)
 .PHONY: all clean

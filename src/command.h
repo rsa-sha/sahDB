@@ -27,15 +27,17 @@ typedef struct CommandNode{
     bool isCmd;                     // If true then we call func_ptr
     int depth;                      // for tree traversal
     func_ptr func;
+    const char *usage;
 } commandNode;
 
-#define N_COMMANDS 6
+#define N_COMMANDS 7
 /*
  * HELP     -> Display generic and specific help for stuff
  * SET      -> Modify/Add value for a given key
  * GET      -> Fetch value for a given key
  * EXISTS   -> Check if a key exists in DB
  * DELETE   -> Remove key and corresponding entry from DB
+ * SAVE     -> SAVE the in-memory data to a file on disk
  * EXIT     -> Exit out of the DB process
 */
 
