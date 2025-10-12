@@ -13,7 +13,7 @@
 // IO_Related Methods
 #define MAX_CMD_LEN 512
 #define MAX_CMD_PARAMS 16
-#define MAX_RESP_LEN 81192
+#define MAX_RESP_LEN 8192
 err_t get_user_input(char* cmd);
 
 void send_info_to_user(char *data);

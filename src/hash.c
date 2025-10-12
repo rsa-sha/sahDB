@@ -118,6 +118,7 @@ int hash_insert(char* k, char* v){
     if(!kv)return -1;
     kv->key = strdup(k);
     kv->value = strdup(v);
+    kv->next = NULL;
     err_t res = add_kv_in_arr(idx, kv);
     char resp[MAX_RESP_LEN];
     if (res==0)
