@@ -3,10 +3,18 @@
 build:
 	$(MAKE) -C src
 
+# test:
+# 	python ./test/test_*.py
+# 	rm -rf pexpect_debug.log
+# # 	python3 -m unittest discover -s test
 test:
-	python ./test/insert_get_update.py
-	rm -rf pexpect_debug.log
-# 	python3 -m unittest discover -s test
+	for test_file in ./test/test_*.py; do \
+		echo "Running $$test_file..."; \
+		python $$test_file > /dev/null 2>&1; \
+		exit_code=$$?; \
+		echo "$$test_file ran with exit code $$exit_code"; \
+		rm -rf pexpect_debug.log; \
+	done
 
 clean:
 	$(MAKE) -C src clean
