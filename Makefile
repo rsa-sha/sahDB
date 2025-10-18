@@ -1,25 +1,35 @@
-.DEFAULT_GOAL := build
+BUILD_DIR := build
+
+all: build
 
 build:
-	$(MAKE) -C src
+	@$(MAKE) -C src
+	@mkdir -p $(BUILD_DIR)
+	@mv src/libkv.a $(BUILD_DIR)/
+	@$(MAKE) -C network/c
+	@mv network/c/sahDB $(BUILD_DIR)/
 
-# test:
-# 	python ./test/test_*.py
-# 	rm -rf pexpect_debug.log
-# # 	python3 -m unittest discover -s test
+build-go:
+	@cd network/go && go build -o ../../build/sahdb_go
+
 test:
-	for test_file in ./test/test_*.py; do \
-		echo "Running $$test_file..."; \
-		python $$test_file > /dev/null 2>&1; \
-		exit_code=$$?; \
-		echo "$$test_file ran with exit code $$exit_code"; \
-		rm -rf pexpect_debug.log; \
-	done
+	@echo "Running C unit tests..."
+	@$(MAKE) -C test
 
 clean:
-	$(MAKE) -C src clean
-	rm -rf build/* && rmdir build
+	@$(MAKE) -C src clean
+	@$(MAKE) -C network/c clean
+	@$(MAKE) -C tools clean || true
+# 	@$(MAKE) -C persistence clean || true
+	@rm -rf $(BUILD_DIR)
 
-all: build test clean
 
-.PHONY: all build test clean
+check:
+	cppcheck --enable=all --inconclusive --std=c11 --platform=unix64 \
+		--suppress=missingIncludeSystem --force -I include/ --xml --xml-version=2 . 2> cppcheck.xml
+	cppcheck-htmlreport --file=cppcheck.xml --report-dir=cppcheck-html
+	xdg-open cppcheck-html/index.html
+
+
+
+.PHONY: all build build-go clean test check

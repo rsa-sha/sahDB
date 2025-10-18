@@ -30,8 +30,6 @@ static err_t add_kv_in_arr(int idx, Entry *e){
         free(temp->value);
         // temp->value = 
         strcpy(temp->value, e->value);
-        free(e->key);
-        free(e->value);
         return 0;
     }
     // adding value at end of list
@@ -103,6 +101,7 @@ int hash_delete(char* k){
     } else{
         prev->next = cur->next;
     }
+    ht->count--;
     free(cur->key);
     free(cur->value);
     free(cur);
@@ -127,12 +126,19 @@ int hash_insert(char* k, char* v){
     else if(res==ERR_FULL)
         sprintf(resp, "DB storage is full");
     send_info_to_user(resp);
+    // free(kv->value);
+    // free(kv->key);
+    // free(kv);
     return res;
 }
 
 
 void ht_init(){
     ht = malloc(sizeof(HashTable));
+    if (ht == NULL) {
+        perror("Mem allocation failed");
+        return;
+    }
     ht->size = MOD;
     ht->count = 0;
     ht->buckets = calloc(MOD, sizeof(Entry));

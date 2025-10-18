@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define err_t int
 #define ERR_FULL 100
@@ -14,9 +15,9 @@
 #define MAX_CMD_LEN 512
 #define MAX_CMD_PARAMS 16
 #define MAX_RESP_LEN 8192
-err_t get_user_input(char* cmd);
+err_t get_user_input(char* buf);
 
-void send_info_to_user(char *data);
+void send_info_to_user(const char *data);
 
 err_t tokenize(char *in, char **tokens);
 

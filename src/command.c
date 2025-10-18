@@ -44,7 +44,7 @@ err_t set_kv(char* key, char* val){
         goto ret;
     }
     // is a new KV pair
-    KV kp;
+    KV kp = {};
     strcpy(kp.key, key);
     strcpy(kp.val, val);
     p.records[p.num_records++] = kp;

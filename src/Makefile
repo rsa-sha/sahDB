@@ -1,36 +1,15 @@
-# Compiler
 CC = gcc
+CFLAGS = -Wall -Wextra -I../include -g
+OBJS = db.o hash.o command.o common.o config.o dbsave.o
+TARGET = libkv.a
 
-# Compiler flags
-CFLAGS = -Wall -Wextra -g
-
-# Output dir
-BUILD_DIR = ../build
-
-# Output executable
-TARGET = $(BUILD_DIR)/sahDB
-
-
-# Source file
-SRCS = db.c main.c common.c command.c hash.c dbsave.c
-# Object files
-OBJS = $(addprefix $(BUILD_DIR)/, $(SRCS:.c=.o))
-
-# Default target
 all: $(TARGET)
 
-# Rule to link object files into the final executable
-$(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET)
-
-# Compile each .c file to .o
-$(BUILD_DIR)/%.o: %.c
-	@mkdir -p $(BUILD_DIR)
+%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Clean up compiled files
-clean:
-	rm -f $(BUILD_DIR)/*.o $(TARGET)
+$(TARGET): $(OBJS)
+	ar rcs $@ $^
 
-# Phony targets (not actual files)
-.PHONY: all clean
+clean:
+	rm -f $(OBJS) $(TARGET)
