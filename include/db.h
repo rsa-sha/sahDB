@@ -5,6 +5,7 @@
 #include "command.h"
 
 err_t getAndProcessCommand();
+err_t processCommand(char *req);
 
 extern commandNode commands[];
 
