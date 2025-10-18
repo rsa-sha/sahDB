@@ -1,4 +1,5 @@
 BUILD_DIR := build
+GO_DIR := network/go
 
 all: build
 
@@ -10,7 +11,8 @@ build:
 	@mv network/c/sahDB $(BUILD_DIR)/
 
 build-go:
-	@cd network/go && go build -o ../../build/sahdb_go
+	@cd $(GO_DIR) && CGO_ENABLED=1 go build -o $(abspath $(BUILD_DIR))/sahDB_go
+	@echo "Go binary built successfully at $(BUILD_DIR)/sahDB_go"
 
 test:
 	@echo "Running C unit tests..."
