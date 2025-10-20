@@ -1,0 +1,49 @@
+name: Static + Dynamic Analysis
+
+on: [push, pull_request]
+
+jobs:
+  analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cppcheck valgrind build-essential make
+
+      # ---------- STATIC CHECK (CPPCHECK) ----------
+      - name: Run Cppcheck
+        run: |
+          cppcheck --enable=all --inconclusive --std=c11 --platform=unix64 \
+            --suppress=missingIncludeSystem --force \
+            -I include -I src src/ 2> cppcheck-report.txt
+
+      - name: Upload Cppcheck report
+        uses: actions/upload-artifact@v4
+        with:
+          name: cppcheck-report
+          path: cppcheck-report.txt
+
+      # ---------- BUILD ----------
+      - name: Build project
+        run: make
+
+      # ---------- CWD PATH -----------
+      - name: Find path
+        id: findpth
+        run: echo "$pwd" >> $GITHUB_OUTPUT
+
+      # ---------- DYNAMIC CHECK (VALGRIND) ----------
+      - name: Run Valgrind on built binary
+        run: |
+          valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes \
+            --error-exitcode=1 ~/build/sahDB > valgrind.log 2>&1 || true
+
+      - name: Upload Valgrind report
+        uses: actions/upload-artifact@v4
+        with:
+          name: valgrind-log
+          path: valgrind.log
