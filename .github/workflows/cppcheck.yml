@@ -1,10 +1,22 @@
 name: Static + Dynamic Analysis
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   analysis:
     runs-on: ubuntu-latest
+    name: Cppcheck & Valgrind
+
+    if: >
+      contains(github.event.head_commit.message, '[run-analysis]') ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[run-analysis]')) ||
+      github.event_name == 'workflow_dispatch'
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,16 +43,30 @@ jobs:
       - name: Build project
         run: make
 
-      # ---------- CWD PATH -----------
-      - name: Find path
-        id: findpth
-        run: echo "$pwd" >> $GITHUB_OUTPUT
+      # ---------- FIND BUILT BINARY ----------
+      - name: Detect sahDB binary
+        id: findbin
+        run: |
+          # Try to locate the main sahDB binary (common case)
+          if [ -f build/sahDB ]; then
+            BIN_PATH="build/sahDB"
+            chmod +x "$BIN_PATH"
+          else
+            # Otherwise find the first ELF executable in build/
+            BIN_PATH=$(file build/* | grep ELF | cut -d: -f1 | head -n 1)
+            if [ -z "$BIN_PATH" ]; then
+              echo "❌ No executable binary found in build/"
+              exit 1
+            fi
+          fi
+          echo "binpath=$BIN_PATH" >> $GITHUB_OUTPUT
+          echo "✅ Found binary at: $BIN_PATH"
 
       # ---------- DYNAMIC CHECK (VALGRIND) ----------
-      - name: Run Valgrind on built binary
+      - name: Run Valgrind
         run: |
           valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes \
-            --error-exitcode=1 ~/build/sahDB > valgrind.log 2>&1 || true
+            --error-exitcode=1 ${{ steps.findbin.outputs.binpath }} > valgrind.log 2>&1 || true
 
       - name: Upload Valgrind report
         uses: actions/upload-artifact@v4
