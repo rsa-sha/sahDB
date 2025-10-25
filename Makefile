@@ -24,6 +24,7 @@ clean:
 	@$(MAKE) -C tools clean || true
 # 	@$(MAKE) -C persistence clean || true
 	@rm -rf $(BUILD_DIR)
+	@rm -fr cppcheck*
 
 
 check:

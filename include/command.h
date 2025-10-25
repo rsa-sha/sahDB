@@ -30,10 +30,11 @@ typedef struct CommandNode{
     const char *usage;
 } commandNode;
 
-#define N_COMMANDS 7
+#define N_COMMANDS 8
 /*
  * HELP     -> Display generic and specific help for stuff
  * SET      -> Modify/Add value for a given key
+ * EXPIRE   -> Modify/Add expiration time for a given key
  * GET      -> Fetch value for a given key
  * EXISTS   -> Check if a key exists in DB
  * DELETE   -> Remove key and corresponding entry from DB
@@ -56,5 +57,7 @@ err_t key_exists(int argc, char **cmd_arr);
 /********* DELETE COMMAND ********/
 err_t delete_key_val(int argc, char **cmd_arr);
 
+/********** EXPIRE COMMAND **********/
+err_t expire_key_val(int argc, char **cmd_arr);
 
 #endif

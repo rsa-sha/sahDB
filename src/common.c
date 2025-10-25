@@ -1,9 +1,10 @@
 #include "common.h"
 #include "config.h"
 
+bool SILENT = false;
 int nl = 1;
 // IO_Related Methods
-err_t get_user_input(char *buf){
+err_t get_user_input(char *buf) {
     if (!buf)return 1;
     nl = 0;
     send_info_to_user("sahDB> ");
@@ -17,15 +18,14 @@ err_t get_user_input(char *buf){
         buf[bytes_read - 1] = '\0';
     else
         buf[bytes_read] = '\0';
-    // if (fgets(buf, MAX_CMD_LEN, stdin) != NULL){
-    //     return 0;
-    // }
-    // return 1;
     return 0;
 }
 
 // changed to write to given stream
 void send_info_to_user(const char *data) {
+    // do nothing if call from method for internal use
+    if (SILENT)
+        return;
     if (!data)
         return;
     ssize_t n = write(app_config.output_fd, data, strlen(data));
@@ -35,11 +35,11 @@ void send_info_to_user(const char *data) {
         write(app_config.output_fd, "\n", 1);
 }
 
-err_t tokenize(char *in, char **tokens){
+err_t tokenize(char *in, char **tokens) {
     int count = 0;
     int maxTokens = MAX_CMD_PARAMS;
     char *token = strtok(in, " \t\n");
-    while(token!=NULL && count < maxTokens){
+    while (token!=NULL && count < maxTokens) {
         tokens[count++] = token;
         token = strtok(NULL, " \t\n");
     }

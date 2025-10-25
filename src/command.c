@@ -10,62 +10,32 @@ Page p;
 ############### Commands Begin ###############
 ############################################*/
 
-err_t exit_helper(int argc, char** cmd_arr){
+err_t exit_helper(int argc, char **cmd_arr) {
     char resp[MAX_RESP_LEN];
-    if(argc!=1){
+    if (argc!=1) {
         char err[100];
         sprintf(err, "%sIncorrect number of args passed, run HELP EXIT%s", RED, RESET);
         send_info_to_user(err);
-        return -1;
+        return DB_ERR_INVAILD_ARGS;
     }
     sprintf(resp, "%s%sExiting ...%s", RED, BOLD, RESET);
     send_info_to_user(resp);
-    return SIG_EXIT;
+    return DB_ERR_EXIT;
 }
 
 
 // ########### SET command ###########
-err_t set_kv(char* key, char* val){
-    // if full raise Warning
-    char resp[MAX_RESP_LEN];
-    err_t ret = 0;
-    // check if the key is already present so we have to update the value
-    for(int i=0;i<p.num_records;i++){
-        if (strcmp(key, p.records[i].key)==0){
-            sprintf(resp, "Updated value of key %s to %s in db", key, val);
-            strcpy(p.records[i].val, val);
-            // p.records[i].val = val;
-            goto ret;
-        }
-    }
-    if(p.num_records == MAX_RECORDS){
-        sprintf(resp, "%sPage already full, cannot add more data%s", RED, RESET);
-        ret = 1;
-        goto ret;
-    }
-    // is a new KV pair
-    KV kp = {};
-    strcpy(kp.key, key);
-    strcpy(kp.val, val);
-    p.records[p.num_records++] = kp;
-    sprintf(resp, "Added key %s and value %s in DB", key, val);
-ret:
-    send_info_to_user(resp);
-    return ret;
-}
-
-err_t set_key_val_helper(int argc, char** cmd_arr){
+err_t set_key_val_helper(int argc, char **cmd_arr) {
     err_t res = 0;
-    if(argc!=3){
+    if (argc!=3) {
         char err[MAX_RESP_LEN];
         sprintf(err,"%sIncorrect number of args passed, run HELP SET%s", RED, RESET);
         send_info_to_user(err);
-        res = -1;
+        res = DB_ERR_INVAILD_ARGS;
         goto ret;
     }
     char *key = cmd_arr[1];
     char *val = cmd_arr[2];
-    // res = set_kv(key, val);
     res = hash_insert(key, val);
 ret:
     return res;
@@ -73,35 +43,16 @@ ret:
 
 
 // ########### GET command ###########
-err_t get_kv(char* key){
-    // if full raise Warning
-    char resp[MAX_RESP_LEN];
-    err_t ret = 0;
-    // check if the key is present so we have to print the value
-    for(int i=0;i<p.num_records;i++){
-        if (strcmp(key, p.records[i].key)==0){
-            sprintf(resp, "%s",p.records[i].val);
-            goto ret;
-        }
-    }
-    sprintf(resp, "%sValue corresponding to key %s not present in DB%s", RED, key, RESET);
-    ret = 1;
-ret:
-    send_info_to_user(resp);
-    return ret;
-}
-
-err_t get_val_from_key_helper(int argc, char **cmd_arr){
+err_t get_val_from_key_helper(int argc, char **cmd_arr) {
     err_t res = 0;
-    if(argc!=2){
+    if (argc!=2) {
         char err[100];
         sprintf(err, "%sIncorrect number of args passed, run HELP GET%s", RED, RESET);
         send_info_to_user(err);
-        res = -1;
+        res = DB_ERR_INVAILD_ARGS;
         goto ret;
     }
     char *key = cmd_arr[1];
-    // res = get_kv(key);
     res = hash_get(key);
 ret:
     return res;
@@ -110,19 +61,19 @@ ret:
 // for use in help, defined in last of file
 extern commandNode commands[];
 // HELP CMD methods
-err_t help(){
+err_t help() {
     char resp[MAX_RESP_LEN];
     int resp_idx = 0;
     int idx;
-    for(int j=0; j<N_COMMANDS; j++){
+    for (int j=0; j<N_COMMANDS; j++) {
         idx = 0;
         char *cmd = commands[j].name;
-        while(cmd[idx]!='\0')
+        while (cmd[idx]!='\0')
             resp[resp_idx++] = cmd[idx++];
         resp[resp_idx++] = '\t';
         idx = 0;
         char *usage = commands[j].usage;
-        while(usage[idx]!='\0')
+        while (usage[idx]!='\0')
             resp[resp_idx++] = usage[idx++];
         resp[resp_idx++] = '\n';
     }
@@ -132,73 +83,85 @@ err_t help(){
     return 0;
 }
 
-err_t printSubCommands(char *arg){
+err_t printSubCommands(char *arg) {
     char resp[50];
     sprintf(resp, "%sNot support subcmd print for %s yet%s", RED, arg, RESET);
     send_info_to_user(resp);
     return 0;
 }
 
-err_t help_helper(int argc, char** cmd_arr){
+err_t help_helper(int argc, char **cmd_arr) {
     // this method prints out commands and usage
-    if(argc==1){
+    if (argc==1) {
         help();
-    } else if(argc == 2 && strcmp(cmd_arr[1],"")!=0){
+    } else if (argc == 2 && strcmp(cmd_arr[1],"")!=0) {
         printSubCommands(cmd_arr[1]);
     }
     return 0;
 }
 
 // EXISTS CMD
-err_t exists_helper(int argc, char** cmd_arg){
+err_t exists_helper(int argc, char **cmd_arr) {
     // check if key is present in the page
     char resp[100];
     err_t res = 0;
-    if(argc!=2){
+    if (argc!=2) {
         sprintf(resp, "%sIncorrect number of args passed, run HELP EXISTS%s", RED, RESET);
         send_info_to_user(resp);
-        res = -1;
+        res = DB_ERR_INVAILD_ARGS;
         goto ret;
     }
-    char *key = cmd_arg[1];
-    // for(int i=0;i<p.num_records;i++){
-    //     if( strcmp(p.records[i].key, key) == 0){
-    //         sprintf(resp, "%s%sTRUE%s", BOLD, GREEN, RESET);
-    //         goto ret;
-    //     }
-    // }
-    // sprintf(resp, "%s%sFALSE%s", BOLD, RED, RESET);
-    // res = 1;
+    char *key = cmd_arr[1];
     res = hash_exists(key);
 ret:
     return res;
 }
 
 // DELETE CMD
-err_t delete_key_value_helper(int argc, char** cmd_arg){
+err_t delete_key_value_helper(int argc, char **cmd_arr) {
     // check if key is present in the page
     char resp[100];
     err_t res = 0;
-    if(argc!=2){
+    if (argc!=2) {
         sprintf(resp, "%sIncorrect number of args passed, run HELP DELETE%s", RED, RESET);
         send_info_to_user(resp);
-        res = -1;
+        res = DB_ERR_INVAILD_ARGS;
         goto ret;
     }
-    char *key = cmd_arg[1];
+    char *key = cmd_arr[1];
     res = hash_delete(key);
 ret:
     return res;
 }
 
-// SAVE CMD
-err_t save_helper(int argc, char** cmd_arg){
+// EXPIRE CMD
+err_t expire_key_val(int argc, char **cmd_arr) {
     char resp[100];
     err_t res = 0;
-    if(argc!=1){
+    if (argc!=3) {
+        sprintf(resp, "%sIncorrect number of args passed, run HELP EXPIRE%s", RED, RESET);
+        res = DB_ERR_INVAILD_ARGS;
+        send_info_to_user(resp);
+        goto ret;
+    }
+    char *key = cmd_arr[1];
+    long expiry = (long)atol(cmd_arr[2]);
+    SILENT = true;
+    int key_exists = hash_exists(key);
+    SILENT = false;
+    res = hash_update_expiry(key, expiry);
+ret:
+    return res;
+}
+
+// SAVE CMD
+err_t save_helper(int argc, char **cmd_arr) {
+    char resp[100];
+    err_t res = 0;
+    if (argc!=1) {
         sprintf(resp, "%sIncorrect number of args passed, run HELP SAVE%s", RED, RESET);
         send_info_to_user(resp);
-        res = -1;
+        res = DB_ERR_INVAILD_ARGS;
         goto ret;
     }
     res = fetch_dataset_from_memory();
@@ -226,6 +189,9 @@ commandNode commands[] = {
     },
     {"DELETE", NULL, true, 0, delete_key_value_helper,
         "Remove Key-Value pair from the dataset     : " BOLD RED "DELETE key" RESET
+    },
+    {"EXPIRE", NULL, true, 0, expire_key_val,
+        "Add/Update expuration time of KV pair      : " BOLD RED "EXPIRE key time_in_sec" RESET
     },
     {"SAVE", NULL, true, 0, save_helper,
         "Save the data from dataset to file         : " BOLD GREEN "SAVE" RESET

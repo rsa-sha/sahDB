@@ -3,10 +3,12 @@
 
 #include "common.h"
 
-typedef struct Entry{
+typedef struct Entry {
     char *key;
     char *value;
-    struct Entry *next;     // multiple entries with same Hash value
+    struct Entry *next;
+    struct Entry *prev;
+    time_t expiry;          // when the KV is to be purged
 } Entry;
 
 typedef struct HashTable {
@@ -20,10 +22,11 @@ typedef struct HashTable {
 
 // Methods for users
 void ht_init();
-int hash_insert(char*, char*);
-int hash_get(char*);
-int hash_exists(char*);
-int hash_delete(char*);
+err_t hash_insert(char *, char *);
+err_t hash_get(char *);
+err_t hash_exists(char *);
+err_t hash_delete(char *);
+err_t hash_update_expiry(char *, time_t);
 // err_t ht_set
 
 #endif

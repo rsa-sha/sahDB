@@ -1,6 +1,3 @@
-#include "common.h"
-#include "db.h"
-#include "hash.h"
 #include "network.h"
 
 
@@ -51,7 +48,7 @@ void run_c_server(int port) {
             /* code */
             if (get_user_input(buf)) break;
             result = processCommand(buf);
-            if (result == SIG_EXIT) {
+            if (result == DB_ERR_EXIT) {
                 char *exiting = calloc(MAX_RESP_LEN, sizeof(char));
                 if (!exiting){
                     perror("Memory allcation failure");
@@ -75,7 +72,7 @@ ret:
 
 void eventLoop(){
     err_t res = 0;
-    while (res!=SIG_EXIT){
+    while (res!=DB_ERR_EXIT) {
         res = getAndProcessCommand();
     }
     return;
@@ -83,6 +80,7 @@ void eventLoop(){
 
 int main(int argc, char** argv) {
     ht_init();
+    ttl_init();
     if(ht == NULL)
         return -1;
     // ./exec --port XXXX

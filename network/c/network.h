@@ -4,6 +4,7 @@
 #include "config.h"
 #include "db.h"
 #include "hash.h"
+#include "ttl.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
