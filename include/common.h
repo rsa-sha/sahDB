@@ -45,6 +45,8 @@ extern bool SILENT;
 
 #define DB_ERR_KEY_NOTEXIST     4   // Key entry not present
 #define DB_ERR_CMD_NOTEXIST     5   // Cmd sent does not exist
+#define DB_ERR_KEY_EXPIRED      6   // For Lazy removal (internal use)
+#define DB_ERR_KEY_NOT_EXPIRED  7   // For Lazy removal (internal use)
 
 #define DB_ERR_EXIT             41  // EXIT signal for evnet loop
 

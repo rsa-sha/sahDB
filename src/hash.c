@@ -1,5 +1,6 @@
 #include "common.h"
 #include "hash.h"
+#include "ttl.h"
 
 HashTable* ht;
 
@@ -36,6 +37,19 @@ static err_t add_kv_in_arr(int idx, Entry *e) {
     return 0;
 }
 
+static err_t lazy_expire_and_delete(Entry *e) {
+    err_t res = DB_ERR_KEY_NOT_EXPIRED;
+    if (e->expiry > time(NULL) || e->expiry==-1)
+        return res;
+    res = DB_ERR_KEY_EXPIRED;
+    // deleting the key
+    heap_remove(ttl, e);
+    SILENT = true;
+    hash_delete(e->key);
+    SILENT = false;
+    return res;
+}
+
 err_t hash_get(char *k) {
     char resp[MAX_RESP_LEN];
     err_t res = 0;
@@ -43,7 +57,7 @@ err_t hash_get(char *k) {
     Entry* temp = ht->buckets[idx];
     while (temp!=NULL && strcmp(temp->key, k)!=0)
         temp = temp->next;
-    if (temp==NULL || strcmp(temp->key,k)!=0) {
+    if (temp==NULL || strcmp(temp->key,k)!=0 || lazy_expire_and_delete(temp)==DB_ERR_KEY_EXPIRED) {
         sprintf(resp, "%sValue corresponding to key %s not present in DB%s", RED, k, RESET);
         res = DB_ERR_KEY_NOTEXIST;
         goto ret;
@@ -62,7 +76,7 @@ err_t hash_exists(char *k) {
     Entry* temp = ht->buckets[idx];
     while (temp!=NULL && strcmp(temp->key, k)!=0)
         temp = temp->next;
-    if (temp==NULL || strcmp(temp->key,k)!=0) {
+    if (temp==NULL || strcmp(temp->key,k)!=0 || lazy_expire_and_delete(temp)==DB_ERR_KEY_EXPIRED) {
         sprintf(resp, "%s%sFALSE%s", BOLD, RED, RESET);
         res = DB_ERR_KEY_NOTEXIST;
         goto ret;
@@ -98,6 +112,9 @@ err_t hash_delete(char *k) {
         prev->next = cur->next;
     }
     ht->count--;
+    // removing from TTL in case it's present
+    if (cur->heap_index!=SIZE_MAX && cur->expiry!=ULONG_MAX)
+        heap_remove(ttl, cur);
     free(cur->key);
     free(cur->value);
     free(cur);
@@ -115,7 +132,10 @@ err_t hash_insert(char *k, char *v) {
     kv->value = strdup(v);
     kv->next = NULL;
     kv->prev = NULL;
-    kv->expiry = -1;
+    kv->heap_index = SIZE_MAX;
+    // also handle readded KV which got expired
+    if (!kv->expiry || kv->expiry < time(NULL))
+        kv->expiry = -1;
     err_t res = add_kv_in_arr(idx, kv);
     char resp[MAX_RESP_LEN];
     if (res==0)
@@ -138,11 +158,23 @@ err_t hash_update_expiry(char *key, time_t duration) {
     char resp[100];
     while (kv!=NULL && (strcmp(kv->key, key)!=0))
         kv = kv->next;
-    if (kv==NULL) {
+    if (kv==NULL || lazy_expire_and_delete(kv)==DB_ERR_KEY_EXPIRED) {
         ret = DB_ERR_KEY_NOTEXIST;
         sprintf(resp, "%sNo entry for key %s in DB%s", RED, key, RESET);
     } else {
+        // If already in heap, remove it first
+        if (kv->heap_index != SIZE_MAX) {
+            heap_remove(ttl, kv);
+        }
+        
         kv->expiry = time(NULL) + duration;
+        
+        // adding KV to ttl
+        ret = heap_insert(ttl, kv);
+        if (ret != DB_ERR_OK) {
+            sprintf(resp, "%sUnable to set expiry for key %s%s", RED, key, RESET);
+            goto ret;
+        }
         sprintf(resp, "%sUpdated expiry time of key %s%s", GREEN, key, RESET);
     }
 ret:
