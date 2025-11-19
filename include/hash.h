@@ -9,6 +9,7 @@ typedef struct Entry {
     struct Entry *next;
     struct Entry *prev;
     time_t expiry;          // when the KV is to be purged
+    size_t heap_index;      // for efficicent random removal
 } Entry;
 
 typedef struct HashTable {

@@ -3,12 +3,28 @@
 
 ttl_heap *ttl = NULL;
 
+static inline void swap_nodes(ttl_heap *h, size_t a, size_t b) {
+    ttl_node tmp = h->heap[a];
+    h->heap[a] = h->heap[b];
+    h->heap[b] = tmp;
+
+    h->heap[a].e->heap_index = a;
+    h->heap[b].e->heap_index = b;
+}
+
 bool compare_ttl(ttl_node *a, ttl_node *b) {
     if (a->e->expiry <= b->e->expiry)
         return true;
     return false;
 }
 
+
+static void shift_up(ttl_heap *h, size_t i) {
+    while (i > 0 && compare_ttl(&h->heap[i], &h->heap[PARENT(i)])) {
+        swap_nodes(h, i, PARENT(i));
+        i = PARENT(i);
+    }
+}
 
 void heapify(ttl_heap *h, size_t i) {
     size_t smallest = i;
@@ -22,9 +38,7 @@ void heapify(ttl_heap *h, size_t i) {
         smallest = r;
 
     if (smallest != i) {
-        ttl_node temp = h->heap[i];
-        h->heap[i] = h->heap[smallest];
-        h->heap[smallest] = temp;
+        swap_nodes(h, i, smallest);
         heapify(h, smallest);
     }
 }
@@ -41,14 +55,10 @@ err_t heap_insert(ttl_heap *h, Entry *e) {
 
     size_t i = h->size++;
     h->heap[i].e = e;
+    e->heap_index = i;
 
     // move up
-    while (i>0 && compare_ttl(&h->heap[i], &h->heap[PARENT(i)])) {
-        ttl_node tmp = h->heap[PARENT(i)];
-        h->heap[PARENT(i)] = h->heap[i];
-        h->heap[i] = tmp;
-        i = PARENT(i);
-    }
+    shift_up(h, i);
     return DB_ERR_OK;
 }
 
@@ -56,12 +66,44 @@ Entry *heap_pop(ttl_heap *h) {
     if (h->size == 0)
         return NULL;
     Entry *min = h->heap[0].e;
-    h->heap[0] = h->heap[h->size-1];
+    swap_nodes(h, 0, h->size - 1);
     h->size--;
 
-    heapify(h, 0);
+    if (h->size > 0)
+        heapify(h, 0);
+    
+    min->heap_index = SIZE_MAX;
     return min;
 }
+
+err_t heap_remove(ttl_heap *h, Entry *e) {
+    size_t i = e->heap_index;
+    if (i>=h->size || h->heap[i].e != e)
+        return DB_ERR_KEY_NOTEXIST;
+
+    // If removing the last element, just decrement size
+    if (i == h->size - 1) {
+        h->size--;
+        e->heap_index = SIZE_MAX;
+        return DB_ERR_OK;
+    }
+
+    // Swap with last element
+    swap_nodes(h, i, h->size - 1);
+    h->size--;
+    e->heap_index = SIZE_MAX;
+
+    // Fix heap property at index i
+    // Check if we need to sift up or down
+    if (i > 0 && compare_ttl(&h->heap[i], &h->heap[PARENT(i)])) {
+        shift_up(h, i);
+    } else {
+        heapify(h, i);
+    }
+    
+    return DB_ERR_OK;
+}
+
 
 void ttl_init() {
     ttl = (ttl_heap *)malloc(sizeof(ttl_heap));

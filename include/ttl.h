@@ -4,6 +4,9 @@
 #include "common.h"
 #include "hash.h"
 
+// Forward declaration of Entry to ensure it's recognized
+typedef struct Entry Entry;
+
 // STRUCT (min-heap) for storing pointers of eligible KVs
 
 typedef struct ttl_node {
@@ -37,7 +40,11 @@ bool compare_ttl(ttl_node *a, ttl_node *b);
 
 void heapify(ttl_heap *h, size_t i);
 
+// To add element in the ttl heap [used by hash_update_expiry]
 err_t heap_insert(ttl_heap *h, Entry *e);
+
+// For removing element before expiry
+err_t heap_remove(ttl_heap *h, Entry *e);
 
 /*
 Removes the entry of the expired KV from the TTL heap
