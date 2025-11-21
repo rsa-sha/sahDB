@@ -117,7 +117,7 @@ err_t hash_delete(char *k) {
         heap_remove(ttl, cur);
     free(cur->key);
     free(cur->value);
-    free(cur);
+    // free(cur);
     sprintf(resp, "%sEntry corresponding to key %s removed from DB%s", GREEN, k, RESET);
 ret:
     send_info_to_user(resp);

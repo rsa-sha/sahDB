@@ -3,6 +3,7 @@
 #include "common.h"
 #include "config.h"
 #include "db.h"
+#include "dbsave.h"
 #include "hash.h"
 #include "ttl.h"
 
