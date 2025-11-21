@@ -90,6 +90,11 @@ int main(int argc, char** argv) {
             int port = atoi(argv[2]);
             run_c_server(port);
         }
+        // rebuilding from file?
+        if (strcmp(argv[1], "--savefile")==0) {
+            rebuild_from_savefile();
+            eventLoop();
+        }
     }
     else
         eventLoop();
