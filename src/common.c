@@ -21,7 +21,7 @@ err_t get_user_input(char *buf) {
     return 0;
 }
 
-// changed to write to given stream
+// For sharing information with user
 void send_info_to_user(const char *data) {
     // do nothing if call from method for internal use
     if (SILENT)

@@ -17,3 +17,6 @@ __pycache__/
 # Python debug logs
 pexpect.debug.log
 **/pexpect.debug.log
+
+# Misc
+todo*

@@ -45,15 +45,21 @@ ret:
 // ########### GET command ###########
 err_t get_val_from_key_helper(int argc, char **cmd_arr) {
     err_t res = 0;
-    if (argc!=2) {
+    if (argc<2) {
         char err[100];
         sprintf(err, "%sIncorrect number of args passed, run HELP GET%s", RED, RESET);
         send_info_to_user(err);
         res = DB_ERR_INVAILD_ARGS;
         goto ret;
     }
-    char *key = cmd_arr[1];
-    res = hash_get(key);
+    if (argc == 2) {
+        char *key = cmd_arr[1];
+        res = hash_get(key);
+    }
+    if (argc == 3 && !strcasecmp(cmd_arr[2], "ex")) {
+        char *key = cmd_arr[1];
+        res = hash_get_expiry(key);
+    }
 ret:
     return res;
 }
@@ -147,9 +153,10 @@ err_t expire_key_val(int argc, char **cmd_arr) {
     char *key = cmd_arr[1];
     long expiry = (long)atol(cmd_arr[2]);
     SILENT = true;
-    int key_exists = hash_exists(key);
+    int key_exists_in_ht = hash_exists(key);
     SILENT = false;
-    res = hash_update_expiry(key, expiry);
+    if (key_exists_in_ht == 0)
+        res = hash_update_expiry(key, expiry);
 ret:
     return res;
 }

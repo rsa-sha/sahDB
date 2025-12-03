@@ -1,7 +1,7 @@
 #include "network.h"
 
 
-void run_c_server(int port) {
+void run_as_server(int port) {
     // server FD
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == -1) {
@@ -29,7 +29,7 @@ void run_c_server(int port) {
         goto ret;
     }
 
-    sprintf(resp, "C server running on port %d", port);
+    sprintf(resp, "Server running on port %d", port);
     send_info_to_user(resp);
     free(resp);
     resp = NULL;
@@ -79,24 +79,20 @@ void eventLoop(){
 }
 
 int main(int argc, char** argv) {
+    // initialize internal config variables
+    init_server_config(argc, argv);
     ht_init();
     ttl_init();
     if(ht == NULL)
         return -1;
-    // ./exec --port XXXX
-    if (argc == 3) {
-        // running on network?
-        if (strcmp(argv[1], "--port")==0) {
-            int port = atoi(argv[2]);
-            run_c_server(port);
-        }
-        // rebuilding from file?
-        if (strcmp(argv[1], "--savefile")==0) {
-            rebuild_from_savefile();
-            eventLoop();
-        }
+    if (host_config.rebuild) {
+        rebuild_from_savefile();
+        host_config.rebuild = false;
     }
-    else
+    if (host_config.server_port) {
+        run_as_server(host_config.server_port);
+    } else {
         eventLoop();
+    }
     return 0;
 }
