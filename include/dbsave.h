@@ -2,11 +2,15 @@
 #define DBSAVE_H
 
 #include "common.h"
+#include "config.h"
 #include "hash.h"
+
+extern server_config host_config;
 
 #define META_LEN 50
 #define KV_LEN 1024
-#define SAVE_FILE "data.safe"
+#define DEFAULT_SAVE_FILE "data.safe"
+#define SAVE_FILE host_config.savefile
 #define FILE_HEADER_VER "SahDB001"
 #define FILE_HEADER_LEN 8
 

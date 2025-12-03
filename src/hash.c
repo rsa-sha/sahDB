@@ -50,6 +50,30 @@ static err_t lazy_expire_and_delete(Entry *e) {
     return res;
 }
 
+
+err_t hash_get_expiry(char *k) {
+    char resp[MAX_RESP_LEN];
+    err_t res = 0;
+    int idx = string_folding_hash(k);
+    Entry* temp = ht->buckets[idx];
+    while (temp!=NULL && strcmp(temp->key, k)!=0)
+        temp = temp->next;
+    if (temp==NULL || strcmp(temp->key,k)!=0 || lazy_expire_and_delete(temp)==DB_ERR_KEY_EXPIRED) {
+        sprintf(resp, "%sValue corresponding to key %s not present in DB%s", RED, k, RESET);
+        res = DB_ERR_KEY_NOTEXIST;
+        goto ret;
+    }
+    if (strcmp(temp->key, k)==0) {
+        if (temp->expiry!=-1)
+            sprintf(resp, "Expiry at UNIX time %zu",temp->expiry);
+        else
+            sprintf(resp, "%s%sNo expiry set for %s%s", BOLD, RED, k, RESET);
+    }
+ret:
+    send_info_to_user(resp);
+    return res;
+}
+
 err_t hash_get(char *k) {
     char resp[MAX_RESP_LEN];
     err_t res = 0;
@@ -150,6 +174,20 @@ err_t hash_insert(char *k, char *v) {
     return res;
 }
 
+Entry* hash_get_kv(char *key) {
+    int idx = string_folding_hash(key);
+    Entry *ret = NULL;
+    Entry *kv = ht->buckets[idx];
+    while (kv!=NULL && (strcmp(kv->key, key)!=0))
+        kv = kv->next;
+    if (kv==NULL || lazy_expire_and_delete(kv)==DB_ERR_KEY_EXPIRED) {
+        goto ret;
+    } else {        
+        ret = kv;
+    }
+ret:
+    return ret;
+}
 
 err_t hash_update_expiry(char *key, time_t duration) {
     int idx = string_folding_hash(key);

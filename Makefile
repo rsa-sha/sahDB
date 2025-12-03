@@ -35,9 +35,10 @@ clean:
 	@rm -rf {pexpect_debug.log,test/{*pyc*}}
 	@rm -fr cppcheck*
 
-cleanlogs:
+cleanall:
 	@rm -rf {pexpect_debug.log,test/{*pyc*}}
 	@rm -fr cppcheck*
+	@rm -fr cscope* tags*
 
 
 check:

@@ -17,7 +17,18 @@ static void process_save_data(char *line) {
                 char *exp = strtok_r(NULL, "!", &saveptr_2);
                 hash_insert(key, val);
                 if(strcmp(exp, "-1")) {
-                    hash_update_expiry(key, atoi(exp));
+                    time_t expiry_time = (time_t)atol(exp);
+                    time_t curtime = time(NULL);
+                    if (expiry_time <= curtime) {
+                        hash_delete(key);
+                        // TODO: To internal server log
+                        // send_info_to_user("The key %s is already expired", key);
+                    } else {
+                        Entry *e = hash_get_kv(key);
+                        if (e)
+                            e->expiry = expiry_time;
+                        free(e);
+                    }
                 }
                 kv = strtok_r(NULL, "|", &saveptr_1);
             }
@@ -28,7 +39,7 @@ static void process_save_data(char *line) {
 err_t rebuild_from_savefile() {
     // verify file version
     // char fver[25];
-    err_t res = 0;
+    err_t res = DB_ERR_OK;
     char resp[MAX_RESP_LEN];
     FILE *fp = fopen(SAVE_FILE, "r");
     if (fp == NULL) {
