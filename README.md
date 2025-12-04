@@ -9,9 +9,9 @@ Minimal Database in C
 | **Savefile System (RDB-like)** | Savefile version 001; ability to rebuild DB from savefile on startup                         | [ ]        |
 | **Lazy Expiration + Heap**     | Lazy TTL expiration check using heap                                                         | [ ]        |
 | **TTL & EXPIRE Command**       | Implemented `EXPIRE` command and TTL logic; formatting updates                               | [ ]        |
-| **Network Layer (Go)**         | Fix for issue #9; started network implementation (#10, #11)                                  | [X]        |
-| **SAVE Command**               | `SAVE` command implementation & tests for same                                               | [X]        |
-| **Hash Table Implementation**  | Migrated to basic hash table; hashing changes; merged initial PR                             | [X]        |
+| **Network Layer (Go)**         | Fix for issue #9; started network implementation (#10, #11)                                  | [x]        |
+| **SAVE Command**               | `SAVE` command implementation & tests for same                                               | [x]        |
+| **Hash Table Implementation**  | Migrated to basic hash table; hashing changes; merged initial PR                             | [x]        |
 
 ### 📌 Planned / Upcoming Features
 
