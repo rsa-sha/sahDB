@@ -5,7 +5,7 @@ Minimal Database in C
 ### 📘 Feature Overview & Roadmap
 | Feature                        | Parts  completed                                                                             | Completion |
 | ------------------------------ | -------------------------------------------------------------------------------------------- | ---------- |
-| **Config Support**             | Load settings from config file; added ability to fetch key expiry UNIX time via `get key ex` | [ ]        |
+| **Config Support**             | Load settings from config file;                                                              | [ ]        |
 | **Savefile System (RDB-like)** | Savefile version 001; ability to rebuild DB from savefile on startup                         | [ ]        |
 | **Lazy Expiration + Heap**     | Lazy TTL expiration check using heap                                                         | [ ]        |
 | **TTL & EXPIRE Command**       | Implemented `EXPIRE` command and TTL logic; formatting updates                               | [ ]        |
