@@ -5,9 +5,9 @@
 #include "db.h"
 #include "dbsave.h"
 #include "hash.h"
+#include "replication.h"
 #include "ttl.h"
 
-#include <sys/socket.h>
 #include <netinet/in.h>
 
 extern void run_c_server(int port);
