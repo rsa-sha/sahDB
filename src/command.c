@@ -10,6 +10,7 @@ Page p;
 ############### Commands Begin ###############
 ############################################*/
 
+// This method terminates the conn from USER or REPLICA
 err_t exit_helper(int argc, char **cmd_arr) {
     char resp[MAX_RESP_LEN];
     if (argc!=1) {
@@ -21,6 +22,20 @@ err_t exit_helper(int argc, char **cmd_arr) {
     sprintf(resp, "%s%sExiting ...%s", RED, BOLD, RESET);
     send_info_to_user(resp);
     return DB_ERR_EXIT;
+}
+
+// This method will end server
+err_t shutdown_helper(int argc, char **cmd_arr) {
+    char resp[MAX_RESP_LEN];
+    if (argc!=1) {
+        char err[100];
+        sprintf(err, "%sIncorrect number of args passed, run HELP EXIT%s", RED, RESET);
+        send_info_to_user(err);
+        return DB_ERR_INVAILD_ARGS;
+    }
+    sprintf(resp, "%s%sShutting down server ...%s", RED, BOLD, RESET);
+    send_info_to_user(resp);
+    return DB_ERR_SHUTDOWN;
 }
 
 
@@ -69,22 +84,41 @@ extern commandNode commands[];
 // HELP CMD methods
 err_t help() {
     char resp[MAX_RESP_LEN];
-    int resp_idx = 0;
-    int idx;
-    for (int j=0; j<N_COMMANDS; j++) {
-        idx = 0;
-        char *cmd = commands[j].name;
-        while (cmd[idx]!='\0')
-            resp[resp_idx++] = cmd[idx++];
-        resp[resp_idx++] = '\t';
-        idx = 0;
-        char *usage = commands[j].usage;
-        while (usage[idx]!='\0')
-            resp[resp_idx++] = usage[idx++];
-        resp[resp_idx++] = '\n';
+    size_t resp_idx = 0;
+    size_t max_cmd_len = 0;
+    size_t max_desc_len = 0;
+    /* 1) Compute column widths */
+    for (int i = 0; i < N_COMMANDS; i++) {
+        const char *cmd = commands[i].name;
+        const char *usage = commands[i].usage;
+        const char *colon = strchr(usage, ':');
+        size_t desc_len = colon ? (size_t)(colon - usage) : strlen(usage);
+        max_cmd_len  = MAX(max_cmd_len, strlen(cmd));
+        max_desc_len = MAX(max_desc_len, desc_len);
     }
-    // multiple endline fix
-    resp[resp_idx-1] = '\0';
+    /* 2) Format output */
+    for (int i = 0; i < N_COMMANDS; i++) {
+        const char *cmd = commands[i].name;
+        const char *usage = commands[i].usage;
+        const char *colon = strchr(usage, ':');
+        const char *desc = usage;
+        const char *syntax = colon ? colon + 1 : "";
+        size_t desc_len = colon ? (size_t)(colon - usage) : strlen(usage);
+        int written = snprintf(
+            resp + resp_idx,
+            MAX_RESP_LEN - resp_idx,
+            "%-*s\t%-*.*s :%s\n",
+            (int)max_cmd_len, cmd,
+            (int)max_desc_len, (int)desc_len, desc,
+            syntax
+        );
+        if (written < 0 || resp_idx + written >= MAX_RESP_LEN)
+            break;
+        resp_idx += written;
+    }
+    /* Remove final newline */
+    if (resp_idx > 0)
+        resp[resp_idx - 1] = '\0';
     send_info_to_user(resp);
     return 0;
 }
@@ -204,6 +238,9 @@ commandNode commands[] = {
         "Save the data from dataset to file         : " BOLD GREEN "SAVE" RESET
     },
     {"EXIT", NULL, true, 0, exit_helper,
-        "EXIT the db process                        : " BOLD RED "EXIT" RESET
+        "Exit out of the User|Replica connection    : " BOLD RED "EXIT" RESET
+    },
+    {"SHUTDOWN", NULL, true, 0, shutdown_helper,
+        "SHUTDOWN the DB server                     : " BOLD RED "SHUTDOWN" RESET
     },
 };

@@ -71,7 +71,7 @@ err_t fetch_dataset_from_memory() {
     char resp[MAX_RESP_LEN] = {0};
     if (!fp) {
         sprintf(resp, "Error opening %s file", SAVE_FILE);
-        res = -1;
+        res = DB_ERR_FILE_INACCESSIBLE;
         goto ret;
     }
     // Write metadata

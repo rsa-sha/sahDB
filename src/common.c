@@ -45,3 +45,69 @@ err_t tokenize(char *in, char **tokens) {
     }
     return count; //excluding \0
 }
+
+// size in bytes using fseek and ftell
+long get_file_size(const char *path) {
+    FILE *fp = fopen(path, "r");
+    fseek(fp, 0, SEEK_END);
+    long size = ftell(fp);
+    fclose(fp);
+    return size;
+}
+
+
+// network data write over socket
+err_t socket_send_data(int socket, const char *fmt, ...) {
+    err_t res = DB_ERR_OK;
+    char resp[MAX_RESP_LEN];
+    char buffer[MAX_RESP_LEN];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buffer, MAX_RESP_LEN, fmt, args);
+    va_end(args);
+    ssize_t bytes_sent = send(socket, buffer, strlen(buffer), 0);
+    if (bytes_sent < 1) {
+        // unable to send data to the machine
+        res = DB_ERR_GENERIC_FAIL;
+        // this should be warning in log
+        sprintf(resp, "Not able to share data to machine over network");
+        send_info_to_user(resp);
+    }
+    return res;
+}
+
+// network data read over socket
+err_t socket_read_data(int socket, char *buf, int bufsize) {
+    err_t res = DB_ERR_OK;
+    char resp[MAX_RESP_LEN];
+retry:
+    ssize_t bytes_read = read(socket, buf, bufsize);
+    if (bytes_read > 0) {
+        // should be in REPL LOG
+        // sprintf(resp, "Read %zu bytes of data", bytes_read);
+        // send_info_to_user(resp);
+        // replace \n with \0
+        if (buf[bytes_read-1] == '\n')buf[bytes_read-1] = '\0';
+        goto ret;
+    }
+    if (bytes_read == 0) {
+        sprintf(resp, "Connetion won't receive any new info from repl");
+        send_info_to_user(resp);
+        res = DB_ERR_GENERIC_FAIL;
+        goto ret;
+    }
+    if (errno == EINTR) {
+        goto retry;   // interrupted → try again
+    }
+
+    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        // socket is not ready; for blocking sockets this is rare
+        // treat as failure for now
+        return DB_ERR_GENERIC_FAIL;
+    }
+    if (bytes_read < 0){
+        res = DB_ERR_GENERIC_FAIL;
+    }
+ret:
+    return res;
+}

@@ -1,7 +1,7 @@
 #include "db.h"
 // #include "command.h"
 
-err_t processCommand(char *req) {
+err_t processCommand(char *req, int idx) {
     char **cmd_arr = malloc(sizeof(char)*(MAX_CMD_LEN*2));
     // split req into tokens
     err_t res = tokenize(req, cmd_arr);
@@ -23,8 +23,15 @@ err_t processCommand(char *req) {
     }
     if (i==N_COMMANDS && handler == NULL) {
         char resp[MAX_RESP_LEN];
-        sprintf(resp, "%s%sCommand %s not a supported CMD. Use HELP cmd to know more%s", BOLD, YELLOW, cmd_arr[0], RESET);
-        send_info_to_user(resp);
+        if (idx>-1) {
+            conn_t *conn = &CONN(idx);
+            sprintf(resp, "%s%sCommand %s not a supported CMD. Use HELP cmd to know more%s\n", BOLD, YELLOW, cmd_arr[0], RESET);
+            socket_send_data(conn->fd, resp);
+            // move ptr to next line
+        } else {
+            sprintf(resp, "%s%sCommand %s not a supported CMD. Use HELP cmd to know more%s", BOLD, YELLOW, cmd_arr[0], RESET);
+            send_info_to_user(resp);
+        }
         res = DB_ERR_CMD_NOTEXIST;
         goto ret;
     }
@@ -37,6 +44,7 @@ ret:
     return res;
 }
 
+// this should only run in non server mode 
 err_t getAndProcessCommand() {
     char cmd[MAX_CMD_LEN];
     err_t res = get_user_input(cmd);
@@ -48,7 +56,7 @@ err_t getAndProcessCommand() {
         goto ret;
     } else {
         // we'll process cmd
-        res = processCommand(cmd);
+        res = processCommand(cmd, -1);
     }
 ret:
     return res;
