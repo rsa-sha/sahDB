@@ -2,7 +2,9 @@
 #define COMMON_H
 
 #include <ctype.h>
+#include <errno.h>
 #include <limits.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -10,6 +12,11 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+
+#include <netdb.h>
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #define err_t int
 #define ERR_FULL 100
@@ -22,6 +29,12 @@ err_t get_user_input(char *buf);
 void send_info_to_user(const char *data);
 
 err_t tokenize(char *in, char **tokens);
+
+long get_file_size(const char *path);
+
+// network data stream methods
+err_t socket_send_data(int socket, const char *fmt, ...);
+err_t socket_read_data(int socket, char *buf, int bufsize);
 
 
 // FLAG to not display info to user for send_info_to_user call
@@ -37,17 +50,21 @@ extern bool SILENT;
 
 
 // SIGNALS
-#define DB_ERR_GENERIC_FAIL     -1  // Command exec/proc FAIL signal
-#define DB_ERR_OK               0   // Generic exec/proc PASS signal
-#define DB_ERR_SUCCESS          1   // Command execution has been successful
-#define DB_ERR_INVAILD_ARGS     2   // ARGS passed for command are incorrect
-#define DB_ERR_NOMEM            3   // Unable to allocate memory
+#define DB_ERR_GENERIC_FAIL         -1  // Command exec/proc FAIL signal
+#define DB_ERR_OK                   0   // Generic exec/proc PASS signal
+#define DB_ERR_SUCCESS              1   // Command execution has been successful
+#define DB_ERR_INVAILD_ARGS         2   // ARGS passed for command are incorrect
+#define DB_ERR_NOMEM                3   // Unable to allocate memory
 
-#define DB_ERR_KEY_NOTEXIST     4   // Key entry not present
-#define DB_ERR_CMD_NOTEXIST     5   // Cmd sent does not exist
-#define DB_ERR_KEY_EXPIRED      6   // For Lazy removal (internal use)
-#define DB_ERR_KEY_NOT_EXPIRED  7   // For Lazy removal (internal use)
+#define DB_ERR_KEY_NOTEXIST         4   // Key entry not present
+#define DB_ERR_CMD_NOTEXIST         5   // Cmd sent does not exist
+#define DB_ERR_KEY_EXPIRED          6   // For Lazy removal (internal use)
+#define DB_ERR_KEY_NOT_EXPIRED      7   // For Lazy removal (internal use)
 
-#define DB_ERR_EXIT             41  // EXIT signal for evnet loop
+// SAVE file realted
+#define DB_ERR_FILE_INACCESSIBLE    8   // When a file isn't accessible
+
+#define DB_ERR_EXIT                 41  // EXIT signal for USER FD
+#define DB_ERR_SHUTDOWN             42  // SHUTDOWN signal for ending server
 
 #endif

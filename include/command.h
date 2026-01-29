@@ -30,7 +30,7 @@ typedef struct CommandNode{
     const char *usage;
 } commandNode;
 
-#define N_COMMANDS 8
+#define N_COMMANDS 9
 /*
  * HELP     -> Display generic and specific help for stuff
  * SET      -> Modify/Add value for a given key
@@ -39,9 +39,11 @@ typedef struct CommandNode{
  * EXISTS   -> Check if a key exists in DB
  * DELETE   -> Remove key and corresponding entry from DB
  * SAVE     -> SAVE the in-memory data to a file on disk
- * EXIT     -> Exit out of the DB process
+ * EXIT     -> Exit out of the User|Replica connection
+ * SHUTDOWN -> SHUTDOWN the DB server
 */
 
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
 /********** HELP COMMAND **********/
 err_t help();
 
