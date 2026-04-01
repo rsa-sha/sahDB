@@ -2,14 +2,20 @@ BUILD_DIR := build
 GO_DIR := network/go
 SHELL := /bin/bash
 
-all: build
+all: build cli
 
+# Server build
 build:
 	@$(MAKE) -C src
 	@mkdir -p $(BUILD_DIR)
 	@mv src/libkv.a $(BUILD_DIR)/
 	@$(MAKE) -C network/c
 	@mv network/c/sahDB $(BUILD_DIR)/
+
+# CLI build [dbsyms present]
+cli: src/cli.c build/libkv.a
+	@mkdir -p $(BUILD_DIR)
+	$(CC) -g -Iinclude src/cli.c build/libkv.a -o $(BUILD_DIR)/cli
 
 build-go:
 	@cd $(GO_DIR) && CGO_ENABLED=1 go build -o $(abspath $(BUILD_DIR))/sahDB_go

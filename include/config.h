@@ -88,6 +88,7 @@ typedef struct server_config {
     replicaNode         *replicas;          // For replication purposes
     master_info         *master;            // For master comms
     connection_table    *connections;       // For listening for requests from FDs
+    int                 daemonize;          // 0 => NO | 1 => YES
 } server_config;
 
 #define NUM_CONNS host_config.connections->len

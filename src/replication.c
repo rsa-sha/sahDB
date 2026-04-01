@@ -39,6 +39,7 @@ err_t sig_send_req_to_mas(master_repl_comm_request_sig sig_send,
 
     // this will receive the stuff from Master
     char *buf = calloc(sizeof(char), MAX_CMD_LEN);
+    if (!buf) return DB_ERR_NOMEM;
     int bytes_sent, bytes_recv;
 
     bytes_sent = send(
@@ -51,8 +52,9 @@ err_t sig_send_req_to_mas(master_repl_comm_request_sig sig_send,
     }
     sprintf(resp, "Sent to master:%s [%d]", map_enum_to_string(sig_send), bytes_sent);
     send_info_to_user(resp);
-    buf = calloc(sizeof(char), MAX_CMD_LEN);
+    
     // sig from master
+    memset(buf, 0, MAX_CMD_LEN);
     bytes_recv = recv(host_config.master->sock, buf, MAX_CMD_LEN, 0);
     if (bytes_recv < 0) {
         sprintf(resp, "Unable to receive data from Master");
@@ -64,12 +66,13 @@ err_t sig_send_req_to_mas(master_repl_comm_request_sig sig_send,
     // otherwise we sig OK
     send_info_to_user(buf);
     if (strcasecmp(buf, REPL_INIT_JOIN) == 0) {
-        buf = calloc(sizeof(char), MAX_CMD_LEN);
         // master approved us for joining, now we send our details
-        sprintf(buf, "DETAILS=%s:%d\0", host_config.ip, host_config.server_port);
+        memset(buf, 0, MAX_CMD_LEN);
+        sprintf(buf, "DETAILS=%s:%d", host_config.ip, host_config.server_port);
         bytes_sent = send(host_config.master->sock, buf,
         strlen(buf), 0);
     }
+    free(buf);
     return res;
 
 err_ret:
@@ -77,6 +80,7 @@ err_ret:
     close(host_config.master->sock);
     host_config.master->is_conn = false;
     send_info_to_user(resp);
+    if (buf) free(buf);
     return res;
 }
 
@@ -87,6 +91,7 @@ err_t master_init_handshake_with_repl(int repl_fd) {
     err_t res = DB_ERR_OK;
     char resp[MAX_RESP_LEN];
     char *buf = calloc(sizeof(char), MAX_CMD_LEN);
+    if (!buf) return DB_ERR_NOMEM;
     int bytes_sent, bytes_recv;
     bytes_sent = send(repl_fd, REPL_INIT_JOIN, strlen(REPL_INIT_JOIN), 0);
     if (bytes_sent < 0) {
@@ -94,8 +99,9 @@ err_t master_init_handshake_with_repl(int repl_fd) {
         res = DB_ERR_GENERIC_FAIL;
         goto err_ret;
     }
-    buf = calloc(sizeof(char), MAX_CMD_LEN);
+    
     // sig from replica with it's info to be added to mem
+    memset(buf, 0, MAX_CMD_LEN);
     bytes_recv = recv(repl_fd, buf, MAX_CMD_LEN, 0);
     if (bytes_recv < 0) {
         sprintf(resp, "Unable to receive data from potential replica");
@@ -105,7 +111,7 @@ err_t master_init_handshake_with_repl(int repl_fd) {
     // otherwise we sig OK
     sprintf(resp, "received %s from replica", buf);
     send_info_to_user(resp);
-    buf = calloc(sizeof(char), MAX_CMD_LEN);
+    free(buf);
     return res;
 
 err_ret:
@@ -113,12 +119,15 @@ err_ret:
     close(repl_fd);
     host_config.master->is_conn = false;
     send_info_to_user(resp);
+    if (buf) free(buf);
     return res;
 }
 
 
 // Streams file to socket
 err_t send_save_file_to_repl(int sockfd, replicaNode repl, long start, long file_size) {
+    (void)repl;      // Suppress unused parameter warning
+    (void)file_size; // Suppress unused parameter warning
     err_t res = DB_ERR_OK;
     char resp[MAX_RESP_LEN];
     char buffer[MAX_RESP_LEN];
@@ -315,11 +324,11 @@ ret:
 err_t add_repl(/* some string from caller */) {
     err_t res = DB_ERR_OK;
     char resp[MAX_RESP_LEN];
-    char *master_uuid;       // we'll get from string decoding
-    char *replica_uuid;      // we'll get from string decoding
-    char *replica_ip;        // we'll get from string decoding
-    char *replica_port;      // we'll get from string decoding
-    char *replica_hname;     // we'll get from string decoding
+    char *master_uuid = NULL;       // we'll get from string decoding
+    char *replica_uuid = NULL;      // we'll get from string decoding
+    char *replica_ip = NULL;        // we'll get from string decoding
+    char *replica_port = NULL;      // we'll get from string decoding
+    char *replica_hname = NULL;     // we'll get from string decoding
     // TODO: Will we need some kind of lock here (THINK!!)??
     // I guess'll need it when a replica is added/removed while replication (will work on this later)
     if (replica_port == NULL) {
@@ -368,7 +377,7 @@ ret:
 err_t remove_repl(/* some string from caller */) {
     err_t res = DB_ERR_OK;
     char resp[MAX_RESP_LEN];
-    char *replica_uuid;      // we'll get from string decoding
+    char *replica_uuid = NULL;      // we'll get from string decoding
     // TODO: Will need lock here too (THINK!!)??
     // Same reason as in `add_repl`
     if (host_config.num_replicas == 0) {

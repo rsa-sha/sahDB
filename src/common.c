@@ -83,31 +83,32 @@ err_t socket_read_data(int socket, char *buf, int bufsize) {
 retry:
     ssize_t bytes_read = read(socket, buf, bufsize);
     if (bytes_read > 0) {
-        // should be in REPL LOG
-        // sprintf(resp, "Read %zu bytes of data", bytes_read);
-        // send_info_to_user(resp);
-        // replace \n with \0
-        if (buf[bytes_read-1] == '\n')buf[bytes_read-1] = '\0';
+        buf[bytes_read] = '\0';   // ← REQUIRED
+        char *nl = strchr(buf, '\n');
+        if (nl)*nl = '\0';
         goto ret;
     }
     if (bytes_read == 0) {
-        sprintf(resp, "Connetion won't receive any new info from repl");
-        send_info_to_user(resp);
-        res = DB_ERR_GENERIC_FAIL;
+        // EOF
+        res = DB_ERR_CLIENT_CLOSED;
         goto ret;
     }
     if (errno == EINTR) {
         goto retry;   // interrupted → try again
     }
-
-    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        // socket is not ready; for blocking sockets this is rare
-        // treat as failure for now
-        return DB_ERR_GENERIC_FAIL;
-    }
-    if (bytes_read < 0){
-        res = DB_ERR_GENERIC_FAIL;
-    }
+    res = DB_ERR_CLIENT_FATAL;
 ret:
+    return res;
+}
+
+
+err_t user_socket_send_data(int socket, const char *buf, int ret_code) {
+    // first of all we send the data string from server
+    err_t res = DB_ERR_OK;
+    res = socket_send_data(socket, "%s", buf);
+    // send signal
+    char ret_code_str[20];
+    sprintf(ret_code_str, "%s%d", USER_SIG_HDR, ret_code);
+    res = socket_send_data(socket, "%s", ret_code_str);
     return res;
 }

@@ -6,85 +6,111 @@
 // Page
 Page p;
 
+
+void fill_cmd_ctx(cmd_ctx *ctx, err_t res, const char* resp) {
+    if(strcmp(resp, "")==0)return;
+    if (ctx == NULL) {
+        // we log the statements to STD I/O
+        send_info_to_user(resp);
+        return;// DB_ERR_OK;
+    }
+    strcpy(ctx->resp, resp);
+    ctx->status = res;
+    return;// DB_ERR_OK;
+}
+
+// err_t command_ctx_write(cmd_ctx *ctx, const char *data) {
+//     strcpy(ctx->resp, data);
+//     return DB_ERR_OK;
+// }
+
 /*############################################
 ############### Commands Begin ###############
 ############################################*/
 
 // This method terminates the conn from USER or REPLICA
-err_t exit_helper(int argc, char **cmd_arr) {
-    char resp[MAX_RESP_LEN];
+err_t exit_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
+    char resp[MAX_RESP_LEN] = "";
+    err_t res = DB_ERR_OK;
     if (argc!=1) {
-        char err[100];
-        sprintf(err, "%sIncorrect number of args passed, run HELP EXIT%s", RED, RESET);
-        send_info_to_user(err);
-        return DB_ERR_INVAILD_ARGS;
+        sprintf(resp, "%sIncorrect number of args passed, run HELP EXIT%s", RED, RESET);
+        //send_info_to_user(resp);
+        res = DB_ERR_INVAILD_ARGS;
+        goto ret;
     }
     sprintf(resp, "%s%sExiting ...%s", RED, BOLD, RESET);
-    send_info_to_user(resp);
-    return DB_ERR_EXIT;
+    res = DB_ERR_EXIT;
+ret:
+    fill_cmd_ctx(ctx, res, resp);
+    return res;
 }
 
 // This method will end server
-err_t shutdown_helper(int argc, char **cmd_arr) {
-    char resp[MAX_RESP_LEN];
+err_t shutdown_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
+    char resp[MAX_RESP_LEN] = "";
+    err_t res = DB_ERR_OK;
     if (argc!=1) {
-        char err[100];
-        sprintf(err, "%sIncorrect number of args passed, run HELP EXIT%s", RED, RESET);
-        send_info_to_user(err);
-        return DB_ERR_INVAILD_ARGS;
+        sprintf(resp, "%sIncorrect number of args passed, run HELP EXIT%s", RED, RESET);
+        //send_info_to_user(err);
+        res = DB_ERR_INVAILD_ARGS;
+        goto ret;
     }
     sprintf(resp, "%s%sShutting down server ...%s", RED, BOLD, RESET);
-    send_info_to_user(resp);
-    return DB_ERR_SHUTDOWN;
+    res = DB_ERR_SHUTDOWN;
+ret:
+    fill_cmd_ctx(ctx, res, resp);
+    return res;
 }
 
 
 // ########### SET command ###########
-err_t set_key_val_helper(int argc, char **cmd_arr) {
+err_t set_key_val_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
     err_t res = 0;
+    char resp[MAX_RESP_LEN] = "";
     if (argc!=3) {
-        char err[MAX_RESP_LEN];
-        sprintf(err,"%sIncorrect number of args passed, run HELP SET%s", RED, RESET);
-        send_info_to_user(err);
+        sprintf(resp,"%sIncorrect number of args passed, run HELP SET%s", RED, RESET);
+        // send_info_to_user(err);
         res = DB_ERR_INVAILD_ARGS;
         goto ret;
     }
     char *key = cmd_arr[1];
     char *val = cmd_arr[2];
-    res = hash_insert(key, val);
+    res = hash_insert(key, val, ctx);
 ret:
+    fill_cmd_ctx(ctx, res, resp);
     return res;
 }
 
 
 // ########### GET command ###########
-err_t get_val_from_key_helper(int argc, char **cmd_arr) {
+err_t get_val_from_key_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
     err_t res = 0;
+    char resp[MAX_RESP_LEN] = "";
     if (argc<2) {
-        char err[100];
-        sprintf(err, "%sIncorrect number of args passed, run HELP GET%s", RED, RESET);
-        send_info_to_user(err);
+        sprintf(resp, "%sIncorrect number of args passed, run HELP GET%s", RED, RESET);
         res = DB_ERR_INVAILD_ARGS;
         goto ret;
     }
     if (argc == 2) {
         char *key = cmd_arr[1];
-        res = hash_get(key);
+        res = hash_get(key, ctx);
     }
     if (argc == 3 && !strcasecmp(cmd_arr[2], "ex")) {
         char *key = cmd_arr[1];
-        res = hash_get_expiry(key);
+        res = hash_get_expiry(key, ctx);
     }
 ret:
+    fill_cmd_ctx(ctx, res, resp);
     return res;
 }
 
 // for use in help, defined in last of file
 extern commandNode commands[];
 // HELP CMD methods
-err_t help() {
+err_t help(cmd_ctx *ctx) {
     char resp[MAX_RESP_LEN];
     size_t resp_idx = 0;
+    err_t res = DB_ERR_OK;
     size_t max_cmd_len = 0;
     size_t max_desc_len = 0;
     /* 1) Compute column widths */
@@ -119,8 +145,8 @@ err_t help() {
     /* Remove final newline */
     if (resp_idx > 0)
         resp[resp_idx - 1] = '\0';
-    send_info_to_user(resp);
-    return 0;
+    fill_cmd_ctx(ctx, res, resp);
+    return res;
 }
 
 err_t printSubCommands(char *arg) {
@@ -130,10 +156,10 @@ err_t printSubCommands(char *arg) {
     return 0;
 }
 
-err_t help_helper(int argc, char **cmd_arr) {
+err_t help_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
     // this method prints out commands and usage
     if (argc==1) {
-        help();
+        help(ctx);
     } else if (argc == 2 && strcmp(cmd_arr[1],"")!=0) {
         printSubCommands(cmd_arr[1]);
     }
@@ -141,9 +167,9 @@ err_t help_helper(int argc, char **cmd_arr) {
 }
 
 // EXISTS CMD
-err_t exists_helper(int argc, char **cmd_arr) {
+err_t exists_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
     // check if key is present in the page
-    char resp[100];
+    char resp[MAX_RESP_LEN] = "";
     err_t res = 0;
     if (argc!=2) {
         sprintf(resp, "%sIncorrect number of args passed, run HELP EXISTS%s", RED, RESET);
@@ -152,15 +178,16 @@ err_t exists_helper(int argc, char **cmd_arr) {
         goto ret;
     }
     char *key = cmd_arr[1];
-    res = hash_exists(key);
+    res = hash_exists(key, ctx);
 ret:
+    fill_cmd_ctx(ctx, res, resp);
     return res;
 }
 
 // DELETE CMD
-err_t delete_key_value_helper(int argc, char **cmd_arr) {
+err_t delete_key_value_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
     // check if key is present in the page
-    char resp[100];
+    char resp[MAX_RESP_LEN] = "";
     err_t res = 0;
     if (argc!=2) {
         sprintf(resp, "%sIncorrect number of args passed, run HELP DELETE%s", RED, RESET);
@@ -169,14 +196,15 @@ err_t delete_key_value_helper(int argc, char **cmd_arr) {
         goto ret;
     }
     char *key = cmd_arr[1];
-    res = hash_delete(key);
+    res = hash_delete(key, ctx);
 ret:
+    fill_cmd_ctx(ctx, res, resp);
     return res;
 }
 
 // EXPIRE CMD
-err_t expire_key_val(int argc, char **cmd_arr) {
-    char resp[100];
+err_t expire_key_val(int argc, char **cmd_arr, cmd_ctx *ctx) {
+    char resp[MAX_RESP_LEN] = "";
     err_t res = 0;
     if (argc!=3) {
         sprintf(resp, "%sIncorrect number of args passed, run HELP EXPIRE%s", RED, RESET);
@@ -187,26 +215,30 @@ err_t expire_key_val(int argc, char **cmd_arr) {
     char *key = cmd_arr[1];
     long expiry = (long)atol(cmd_arr[2]);
     SILENT = true;
-    int key_exists_in_ht = hash_exists(key);
+    int key_exists_in_ht = hash_exists(key, ctx);
     SILENT = false;
     if (key_exists_in_ht == 0)
-        res = hash_update_expiry(key, expiry);
+        res = hash_update_expiry(key, expiry, ctx);
 ret:
+    fill_cmd_ctx(ctx, res, resp);
     return res;
 }
 
 // SAVE CMD
-err_t save_helper(int argc, char **cmd_arr) {
-    char resp[100];
+err_t save_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
+    char resp[MAX_RESP_LEN] = "";
     err_t res = 0;
     if (argc!=1) {
         sprintf(resp, "%sIncorrect number of args passed, run HELP SAVE%s", RED, RESET);
-        send_info_to_user(resp);
+        //send_info_to_user(resp);
         res = DB_ERR_INVAILD_ARGS;
         goto ret;
     }
     res = fetch_dataset_from_memory();
 ret:
+    if (ctx)
+        sprintf(resp, "Data from disk written to %s", SAVE_FILE);
+    fill_cmd_ctx(ctx, res, resp);
     return res;
 }
 

@@ -2,6 +2,7 @@
 #define HASH_H
 
 #include "common.h"
+#include "command.h"
 
 typedef struct Entry {
     char *key;
@@ -18,13 +19,13 @@ typedef struct HashTable {
     size_t count;           // number of elements
 } HashTable;
 
-#define MOD 31
+#define MOD 101
 
 
 // Methods for users
 void ht_init();
-err_t hash_insert(char *, char *);
-err_t hash_get(char *);
+err_t hash_insert(char *, char *, cmd_ctx *ctx);
+err_t hash_get(char *, cmd_ctx *ctx);
 // this method returns the KV entry and is for INTERNAL USE ONLY
 Entry* hash_get_kv(char *);
 
@@ -34,7 +35,7 @@ Input: Key (char*)
 Resp: UNIX expiry time if expiry is set
 Return: (0=>Expiry Exists, 4=>Key does not exist)
 */
-err_t hash_get_expiry(char *);
+err_t hash_get_expiry(char *, cmd_ctx *ctx);
 
 /*
 Info: Verifies existence of KV in HT
@@ -42,7 +43,7 @@ Input: Key (char*)
 Resp: TRUE||FALSE based on existence
 Return: (0=>Exists, 4=>Key does not exist)
 */
-err_t hash_exists(char *);
+err_t hash_exists(char *, cmd_ctx *ctx);
 
 /*
 Info: Removes entry of KV from HT
@@ -50,8 +51,8 @@ Input: Key (char*)
 Resp: Confirmation of deletion|Log in case non-existent Key
 Return: (0=>YES, 4=>Key does not exist)
 */
-err_t hash_delete(char *);
-err_t hash_update_expiry(char *, time_t);
+err_t hash_delete(char *, cmd_ctx *ctx);
+err_t hash_update_expiry(char *, time_t, cmd_ctx *ctx);
 // err_t ht_set
 
 #endif

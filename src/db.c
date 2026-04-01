@@ -1,10 +1,36 @@
 #include "db.h"
 // #include "command.h"
 
-err_t processCommand(char *req, int idx) {
-    char **cmd_arr = malloc(sizeof(char)*(MAX_CMD_LEN*2));
+err_t handle_request(conn_t *conn, char *req) {
+    conn_t *def = calloc(1, sizeof(conn_t));
+    def->conn_state = STATE_ACTIVE;
+    def->conn_type = CONN_UNKN;
+    def->fd = STDOUT_FILENO;
+    cmd_ctx ctx = {
+        .conn = conn?conn:def,
+        .resp = calloc(1, MAX_RESP_LEN),
+        .status = DB_ERR_OK,
+    };
+    processCommand(req, &ctx);
+    err_t res = ctx.status;
+    if (ctx.conn->fd == CONN_UNKN) {
+        send_info_to_user(ctx.resp);
+    } else {
+        socket_send_data(ctx.conn->fd, "%s\n%s", ctx.resp, USER_PROMPT);
+    }
+    free(def);
+    free(ctx.resp);
+    return res;
+}
+
+
+err_t processCommand(char *req, cmd_ctx *ctx) {
+    char **cmd_arr = malloc(sizeof(char*) * MAX_CMD_PARAMS);
+    if (!cmd_arr) return DB_ERR_NOMEM;
     // split req into tokens
     err_t res = tokenize(req, cmd_arr);
+    int argc = res;
+    char resp[MAX_RESP_LEN] = "";
     // TODO: tree walk for command check
     // compare the first entry of cmd_arr to get command type
     func_ptr handler = NULL;
@@ -22,25 +48,18 @@ err_t processCommand(char *req, int idx) {
         }
     }
     if (i==N_COMMANDS && handler == NULL) {
-        char resp[MAX_RESP_LEN];
-        if (idx>-1) {
-            conn_t *conn = &CONN(idx);
-            sprintf(resp, "%s%sCommand %s not a supported CMD. Use HELP cmd to know more%s\n", BOLD, YELLOW, cmd_arr[0], RESET);
-            socket_send_data(conn->fd, resp);
-            // move ptr to next line
-        } else {
-            sprintf(resp, "%s%sCommand %s not a supported CMD. Use HELP cmd to know more%s", BOLD, YELLOW, cmd_arr[0], RESET);
-            send_info_to_user(resp);
-        }
+        sprintf(resp, "%s%sCommand %s not a supported CMD. Use HELP cmd to know more%s", BOLD, YELLOW, cmd_arr[0], RESET);
         res = DB_ERR_CMD_NOTEXIST;
+        //ctx->status =  res;
         goto ret;
     }
     if (checkSubCmd) {
         // process subcmd check
     }
     // if works call func-ptr for processing
-    res = handler(res, cmd_arr);
+    res = handler(argc, cmd_arr, ctx);
 ret:
+    fill_cmd_ctx(ctx, res, resp);
     return res;
 }
 
@@ -56,7 +75,7 @@ err_t getAndProcessCommand() {
         goto ret;
     } else {
         // we'll process cmd
-        res = processCommand(cmd, -1);
+        res = processCommand(cmd, NULL);
     }
 ret:
     return res;
