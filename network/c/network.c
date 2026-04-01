@@ -47,7 +47,7 @@ void run_as_server() {
         FD_SET(server_fd, &readfds);
         int maxfd = server_fd;      // range of FDs to monitor
         // checking existing connections
-        for (size_t i = 0; i < NUM_CONNS; i++) {
+        for (size_t i = 0; i < (size_t)NUM_CONNS; i++) {
             conn_t *temp = &CONN(i);
             if (temp->fd != -1) {
                 FD_SET(temp->fd, &readfds);
@@ -91,8 +91,10 @@ void run_as_server() {
         for (int i = 0; i < NUM_CONNS; i++) {
             if (CONN(i).fd == -1 || !FD_ISSET(CONN(i).fd, &readfds))
                 continue;
-            char buf[MAX_CMD_LEN];
-            if (socket_read_data(CONN(i).fd, buf, MAX_CMD_LEN - 1) !=DB_ERR_OK) {
+            char *buf = calloc(1, MAX_CMD_LEN);
+            err_t socket_read_ret = socket_read_data(CONN(i).fd, buf, MAX_CMD_LEN - 1);
+            if (socket_read_ret == DB_ERR_CLIENT_CLOSED ||
+                socket_read_ret == DB_ERR_CLIENT_FATAL) {
                 close(CONN(i).fd);
                 CONN(i).fd = -1;
                 continue;
@@ -117,7 +119,10 @@ void run_as_server() {
             }
             /* ACTIVE */
             if(CONN(i).conn_type == CONN_USER && CONN(i).fd > 0) {
-                err_t res = processCommand(buf, i);
+                // err_t res = processCommand(buf, i);
+                err_t res = DB_ERR_OK;
+                if (strlen(buf))
+                    res = handle_request(&CONN(i), buf);
                 if (res == DB_ERR_EXIT) {
                     close(CONN(i).fd);
                     CONN(i).fd = -1;
@@ -142,11 +147,28 @@ eventLoop func takes no args
 Will only run when DB started in non-server mode locally
 */
 void eventLoop(){
-    err_t res = 0;
-    while (res!=DB_ERR_SHUTDOWN) {
+    err_t res = DB_ERR_OK;
+    // In case of non-server mode DB_ERR_EXIT is treated as DB_ERR_SHUTDOWN
+    while (res!=DB_ERR_EXIT) {
         res = getAndProcessCommand();
     }
     return;
+}
+
+/*
+Daemonizes the server running
+*/
+void daemonize() {
+    int fd;
+    if (fork() != 0) exit(0); /* parent exists */
+    setsid();
+
+    if ((fd = open("/dev/null", O_RDWR, 0)) != -1) {
+        dup2(fd, STDIN_FILENO);
+        dup2(fd, STDOUT_FILENO);
+        dup2(fd, STDERR_FILENO);
+        if (fd > STDERR_FILENO) close(fd);
+    }
 }
 
 int main(int argc, char** argv) {
@@ -156,6 +178,16 @@ int main(int argc, char** argv) {
     ttl_init();
     if(ht == NULL)
         return -1;
+    if (host_config.daemonize) {
+        if (!host_config.server_port) {
+            // Daemonizing non-server not allowed since no communication method present for that case
+            char resp[MAX_RESP_LEN];
+            sprintf(resp, "%s%sDaemonzation in non-server mode not allowed%s", RED, BOLD, RESET);
+            send_info_to_user(resp);
+            return DB_ERR_INVAILD_ARGS;
+        }
+        daemonize();
+    }
     if (host_config.rebuild) {
         rebuild_from_savefile();
         host_config.rebuild = false;

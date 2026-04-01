@@ -5,18 +5,28 @@
 HashTable* ht;
 
 static uint64_t string_folding_hash(char *k) {
-    uint64_t sm = 0;
-    uint64_t mul = 1;
-    for (uint64_t i=0;i<strlen(k);i++) {
-        mul = (i%4==0)?1:256;
-        sm = (sm + k[i]*mul)%MOD;
-    }
-    return (int)sm%MOD;
+    // DJB2 algorithm
+    uint64_t hash = 5381;
+    int c;
+    while ((c = *k++))
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    return hash % MOD;
 }
 
 static err_t add_kv_in_arr(int idx, Entry *e) {
-    if (ht->count + 1 >= ht->size)
+    if (ht->count + 1 >= ht->size) {
+        // We still need to check if it's an update even if full
+        Entry* temp = ht->buckets[idx];
+        while (temp!=NULL) {
+            if (strcmp(temp->key, e->key) == 0) {
+                free(temp->value);
+                temp->value = strdup(e->value);
+                return DB_ERR_KEY_EXISTS;
+            }
+            temp = temp->next;
+        }
         return ERR_FULL;
+    }
     Entry* temp = ht->buckets[idx];
     if (temp==NULL) {
         ht->buckets[idx] = e;
@@ -28,8 +38,8 @@ static err_t add_kv_in_arr(int idx, Entry *e) {
     // check if a KV is being update
     if (strcmp(temp->key, e->key)==0) {
         free(temp->value);
-        strcpy(temp->value, e->value);
-        return 0;
+        temp->value = strdup(e->value);
+        return DB_ERR_KEY_EXISTS;
     }
     // adding value at end of list
     temp->next = e;
@@ -45,13 +55,13 @@ static err_t lazy_expire_and_delete(Entry *e) {
     // deleting the key
     heap_remove(ttl, e);
     SILENT = true;
-    hash_delete(e->key);
+    hash_delete(e->key, NULL);
     SILENT = false;
     return res;
 }
 
 
-err_t hash_get_expiry(char *k) {
+err_t hash_get_expiry(char *k, cmd_ctx *ctx) {
     char resp[MAX_RESP_LEN];
     err_t res = 0;
     int idx = string_folding_hash(k);
@@ -70,11 +80,11 @@ err_t hash_get_expiry(char *k) {
             sprintf(resp, "%s%sNo expiry set for %s%s", BOLD, RED, k, RESET);
     }
 ret:
-    send_info_to_user(resp);
+    fill_cmd_ctx(ctx, res, resp);
     return res;
 }
 
-err_t hash_get(char *k) {
+err_t hash_get(char *k, cmd_ctx *ctx) {
     char resp[MAX_RESP_LEN];
     err_t res = 0;
     int idx = string_folding_hash(k);
@@ -89,11 +99,11 @@ err_t hash_get(char *k) {
     if (strcmp(temp->key, k)==0)
         sprintf(resp, "%s",temp->value);
 ret:
-    send_info_to_user(resp);
+    fill_cmd_ctx(ctx, res, resp);
     return res;
 }
 
-err_t hash_exists(char *k) {
+err_t hash_exists(char *k, cmd_ctx *ctx) {
     char resp[MAX_RESP_LEN];
     err_t res = 0;
     int idx = string_folding_hash(k);
@@ -108,11 +118,11 @@ err_t hash_exists(char *k) {
     if (strcmp(temp->key, k)==0)
         sprintf(resp, "%s%sTRUE%s", BOLD, GREEN, RESET);
 ret:
-    send_info_to_user(resp);
+    fill_cmd_ctx(ctx, res, resp);
     return res;
 }
 
-err_t hash_delete(char *k) {
+err_t hash_delete(char *k, cmd_ctx *ctx) {
     int idx = string_folding_hash(k);
     char resp[MAX_RESP_LEN];
     err_t res = 0;
@@ -137,40 +147,46 @@ err_t hash_delete(char *k) {
     }
     ht->count--;
     // removing from TTL in case it's present
-    if (cur->heap_index!=SIZE_MAX && cur->expiry!=ULONG_MAX)
+    if (cur->heap_index!=SIZE_MAX && cur->expiry!=LONG_MAX)
         heap_remove(ttl, cur);
     free(cur->key);
     free(cur->value);
-    // free(cur);
+    free(cur);
     sprintf(resp, "%sEntry corresponding to key %s removed from DB%s", GREEN, k, RESET);
 ret:
-    send_info_to_user(resp);
+    fill_cmd_ctx(ctx, res, resp);
     return res;
 }
 
-err_t hash_insert(char *k, char *v) {
+err_t hash_insert(char *k, char *v, cmd_ctx *ctx) {
     int idx = string_folding_hash(k);
     Entry *kv = malloc(sizeof(Entry));
-    if (!kv)return DB_ERR_NOMEM;
+    if (!kv) return DB_ERR_NOMEM;
     kv->key = strdup(k);
     kv->value = strdup(v);
     kv->next = NULL;
     kv->prev = NULL;
     kv->heap_index = SIZE_MAX;
-    // also handle readded KV which got expired
-    if (!kv->expiry || kv->expiry < time(NULL))
-        kv->expiry = -1;
+    kv->expiry = -1;
+
     err_t res = add_kv_in_arr(idx, kv);
     char resp[MAX_RESP_LEN];
-    if (res==0)
-        sprintf(resp, "Added key %s and value %s in DB",
-            kv->key, kv->value);
-    else if (res==ERR_FULL)
+    if (res == 0) {
+        sprintf(resp, "Added key %s and value %s in DB", kv->key, kv->value);
+    } else if (res == DB_ERR_KEY_EXISTS) {
+        sprintf(resp, "Updated key %s with value %s in DB", k, v);
+        free(kv->key);
+        free(kv->value);
+        free(kv);
+        res = 0; // Return success for update
+    } else if (res == ERR_FULL) {
         sprintf(resp, "DB storage is full");
-    send_info_to_user(resp);
-    // free(kv->value);
-    // free(kv->key);
-    // free(kv);
+        sprintf(resp, "DB storage is full");
+        free(kv->key);
+        free(kv->value);
+        free(kv);
+    }
+    fill_cmd_ctx(ctx, res, resp);
     return res;
 }
 
@@ -189,15 +205,15 @@ ret:
     return ret;
 }
 
-err_t hash_update_expiry(char *key, time_t duration) {
+err_t hash_update_expiry(char *key, time_t duration, cmd_ctx *ctx) {
     int idx = string_folding_hash(key);
     Entry *kv = ht->buckets[idx];
-    err_t ret = DB_ERR_OK;
+    err_t res = DB_ERR_OK;
     char resp[100];
     while (kv!=NULL && (strcmp(kv->key, key)!=0))
         kv = kv->next;
     if (kv==NULL || lazy_expire_and_delete(kv)==DB_ERR_KEY_EXPIRED) {
-        ret = DB_ERR_KEY_NOTEXIST;
+        res = DB_ERR_KEY_NOTEXIST;
         sprintf(resp, "%sNo entry for key %s in DB%s", RED, key, RESET);
     } else {
         // If already in heap, remove it first
@@ -208,16 +224,16 @@ err_t hash_update_expiry(char *key, time_t duration) {
         kv->expiry = time(NULL) + duration;
         
         // adding KV to ttl
-        ret = heap_insert(ttl, kv);
-        if (ret != DB_ERR_OK) {
+        res = heap_insert(ttl, kv);
+        if (res != DB_ERR_OK) {
             sprintf(resp, "%sUnable to set expiry for key %s%s", RED, key, RESET);
             goto ret;
         }
         sprintf(resp, "%sUpdated expiry time of key %s%s", GREEN, key, RESET);
     }
 ret:
-    send_info_to_user(resp);
-    return ret;
+    fill_cmd_ctx(ctx, res, resp);
+    return res;
 }
 
 
@@ -229,5 +245,5 @@ void ht_init() {
     }
     ht->size = MOD;
     ht->count = 0;
-    ht->buckets = calloc(MOD, sizeof(Entry));
+    ht->buckets = calloc(MOD, sizeof(Entry *));
 }

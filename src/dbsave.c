@@ -15,19 +15,18 @@ static void process_save_data(char *line) {
                 char *key = strtok_r(kv, "!", &saveptr_2);
                 char *val = strtok_r(NULL, "!", &saveptr_2);
                 char *exp = strtok_r(NULL, "!", &saveptr_2);
-                hash_insert(key, val);
+                hash_insert(key, val, NULL);
                 if(strcmp(exp, "-1")) {
                     time_t expiry_time = (time_t)atol(exp);
                     time_t curtime = time(NULL);
                     if (expiry_time <= curtime) {
-                        hash_delete(key);
+                        hash_delete(key, NULL);
                         // TODO: To internal server log
                         // send_info_to_user("The key %s is already expired", key);
                     } else {
                         Entry *e = hash_get_kv(key);
                         if (e)
                             e->expiry = expiry_time;
-                        free(e);
                     }
                 }
                 kv = strtok_r(NULL, "|", &saveptr_1);
@@ -85,7 +84,7 @@ err_t fetch_dataset_from_memory() {
     // VERS 001
     // write header
     fprintf(fp, "%s\n", FILE_HEADER_VER);
-    for (int i=0;i<ht->size;i++) {
+    for (size_t i=0;i<ht->size;i++) {
         char* bucket_data = get_kv_from_bucket(ht->buckets[i]);
         if (bucket_data && strlen(bucket_data)>0)
             // fprintf(fp, "       {\"bucket\":%d, \"entries\":%s},\n", i, bucket_data);
@@ -102,6 +101,7 @@ ret:
 }
 
 char* get_kv_from_bucket(Entry *node) {
+    if (node == NULL) return NULL;
     // return all key-values in the bucket in a string form
     // k1:v1|expiry, k2:v2|expiry, ..., kn:vn|expiry
     char *data = calloc(1,KV_LEN*(ht->count+1));
@@ -116,7 +116,7 @@ char* get_kv_from_bucket(Entry *node) {
         while(node->value[idx]!='\0') data[data_idx++] = node->value[idx++];
         data[data_idx++] = '!';
         char expiry[20];
-        if (node->expiry!=ULONG_MAX)
+        if (node->expiry!=LONG_MAX)
             sprintf(expiry, "%zu", node->expiry);
         else
             sprintf(expiry, "-1");

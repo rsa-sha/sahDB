@@ -3,6 +3,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -37,6 +38,12 @@ err_t socket_send_data(int socket, const char *fmt, ...);
 err_t socket_read_data(int socket, char *buf, int bufsize);
 
 
+// HEADER for sig sent over NTWK to client
+#define USER_SIG_HDR "SIG::"
+#define USER_SIG_HDRLEN 5
+// Internal method called to send info to USER CLI
+err_t user_socket_send_data(int socket, const char *buf, int ret_code);
+
 // FLAG to not display info to user for send_info_to_user call
 // have to be set before ever call, unset after
 extern bool SILENT;
@@ -57,12 +64,18 @@ extern bool SILENT;
 #define DB_ERR_NOMEM                3   // Unable to allocate memory
 
 #define DB_ERR_KEY_NOTEXIST         4   // Key entry not present
-#define DB_ERR_CMD_NOTEXIST         5   // Cmd sent does not exist
-#define DB_ERR_KEY_EXPIRED          6   // For Lazy removal (internal use)
-#define DB_ERR_KEY_NOT_EXPIRED      7   // For Lazy removal (internal use)
+#define DB_ERR_KEY_EXISTS           5   // Key entry already present
+#define DB_ERR_CMD_NOTEXIST         6   // Cmd sent does not exist
+#define DB_ERR_KEY_EXPIRED          7   // For Lazy removal (internal use)
+#define DB_ERR_KEY_NOT_EXPIRED      8   // For Lazy removal (internal use)
 
 // SAVE file realted
-#define DB_ERR_FILE_INACCESSIBLE    8   // When a file isn't accessible
+#define DB_ERR_FILE_INACCESSIBLE    9   // When a file isn't accessible
+
+// CLIENT SOCKET RELATED THINGS
+#define DB_ERR_CLIENT_OK            10  // The client is fine
+#define DB_ERR_CLIENT_CLOSED        11  // Conn terminated by client
+#define DB_ERR_CLIENT_FATAL         12  // Something went wrong with the client
 
 #define DB_ERR_EXIT                 41  // EXIT signal for USER FD
 #define DB_ERR_SHUTDOWN             42  // SHUTDOWN signal for ending server

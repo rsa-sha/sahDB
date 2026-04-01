@@ -87,6 +87,8 @@ static err_t load_server_config() {
                     continue;
                 }
 
+            } else if (strcasecmp(field, "daemonize") == 0 && strcasecmp(value, "yes")==0){
+                    host_config.daemonize = 1;
             } else {
                 continue;
             }
@@ -105,6 +107,8 @@ err_t init_server_config(int argc, char **argv) {
     host_config.server_log_level = LOG_INFO;
     host_config.server_log_file = NULL;
     host_config.config_file = NULL;
+    // default save file
+    host_config.savefile = DEFAULT_SAVE_FILE;
     char resp[100];
     // conf file exists
     for(int i=0; i < argc; i++) {
@@ -136,7 +140,10 @@ err_t init_server_config(int argc, char **argv) {
             host_config.rebuild = true;
         }
         if (strcmp(argv[i], "--ismaster") == 0) {
-            host_config.is_master_node = true;
+            host_config.is_master_node = true;        
+        }
+        if (strcmp(argv[i], "--daemonize") == 0 && (i+1 < argc) && strcmp(argv[i+1], "yes")==0){
+            host_config.daemonize = 1;
         }
     }
     // create attribute list from config file
@@ -177,17 +184,17 @@ ret:
 err_t double_conn_table() {
     err_t res = DB_ERR_OK;
     char resp[100];
+    int new_cap = host_config.connections->cap * 2;
     conn_t *updated_conns = realloc(
         host_config.connections->conns,
-        (DEF_CONN_TABLE_SIZE * 2) * sizeof(conn_t));
-    if (!host_config.connections->conns) {
+        new_cap * sizeof(conn_t));
+    if (!updated_conns) {
         sprintf(resp, "Failed to allocate memory for doubling connection table array");
         res = DB_ERR_NOMEM;
         goto ret;
     }
     host_config.connections->conns = updated_conns;
-    host_config.connections->cap = DEF_CONN_TABLE_SIZE * 2;
-    host_config.connections->len = 0;
+    host_config.connections->cap = new_cap;
     sprintf(resp, "Connection table size doubled");
 ret:
     //TODO: has to be internal to log of current node
@@ -199,16 +206,16 @@ ret:
 err_t remove_entry_conn_table(size_t idx) {
     err_t res = DB_ERR_OK;
     char resp[100];
-    if (idx >= host_config.connections->cap) {
+    if (idx >= (size_t)host_config.connections->cap) {
         sprintf(resp, "Index > used size : SEG FAULT");
         res = DB_ERR_INVAILD_ARGS;
         goto ret;
     }
-    size_t last = NUM_CONNS - 1;
-    if (idx !=last)
+    size_t last = (size_t)host_config.connections->len - 1;
+    if (idx != last)
         CONN(idx) = CONN(last);
     host_config.connections->len--;
-        sprintf(resp, "Removed entry");
+    sprintf(resp, "Removed entry");
 ret:
     //TODO: has to be internal to log of current node
     send_info_to_user(resp);
