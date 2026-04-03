@@ -14,7 +14,8 @@ static uint64_t string_folding_hash(char *k) {
 }
 
 static err_t add_kv_in_arr(int idx, Entry *e) {
-    if (ht->count + 1 >= ht->size) {
+    //if (ht->count + 1 >= ht->size) {
+    if (ht->count + 1 >= MAX_ALLOWED) {
         // We still need to check if it's an update even if full
         Entry* temp = ht->buckets[idx];
         while (temp!=NULL) {
@@ -180,7 +181,6 @@ err_t hash_insert(char *k, char *v, cmd_ctx *ctx) {
         free(kv);
         res = 0; // Return success for update
     } else if (res == ERR_FULL) {
-        sprintf(resp, "DB storage is full");
         sprintf(resp, "DB storage is full");
         free(kv->key);
         free(kv->value);

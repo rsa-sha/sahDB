@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include "common.h"
+#include "config.h"
 
 // STATES OF Connection
 #define CLI_NO_CONN     (1ULL << 0)     // Initial state of CLI Conn
@@ -24,6 +25,7 @@ typedef struct cli_s {
 #define HANDSHAKE_INIT      "USER_JOIN"
 #define HANDSHAKE_INIT_LEN  9
 
+extern AppConfig app_config;
 /*
 init_cli_config takes args passed from terminal
 and builds up the struct for CLI options

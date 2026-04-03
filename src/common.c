@@ -26,7 +26,7 @@ void send_info_to_user(const char *data) {
     // do nothing if call from method for internal use
     if (SILENT)
         return;
-    if (!data)
+    if (!data || strcmp(data, "")==0)
         return;
     ssize_t n = write(app_config.output_fd, data, strlen(data));
     if (n<0)
