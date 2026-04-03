@@ -16,7 +16,7 @@ static void process_save_data(char *line) {
                 char *val = strtok_r(NULL, "!", &saveptr_2);
                 char *exp = strtok_r(NULL, "!", &saveptr_2);
                 hash_insert(key, val, NULL);
-                if(strcmp(exp, "-1")) {
+                if(exp != NULL && strcmp(exp, "-1")) {
                     time_t expiry_time = (time_t)atol(exp);
                     time_t curtime = time(NULL);
                     if (expiry_time <= curtime) {

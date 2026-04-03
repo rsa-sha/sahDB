@@ -13,6 +13,7 @@ typedef struct Entry {
     size_t heap_index;      // for efficicent random removal
 } Entry;
 
+#define MAX_ALLOWED LONG_MAX
 typedef struct HashTable {
     Entry **buckets;        // array of linked list heads
     size_t size;            // number of buckets

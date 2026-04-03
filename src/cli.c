@@ -83,7 +83,7 @@ err_t handshake_with_server() {
 err_t process_user_req() {
     char cmd[MAX_CMD_LEN];
     char resp[MAX_RESP_LEN];
-    SILENT = ~SILENT;
+    //SILENT = ~SILENT;
     get_user_input(cmd);
     if(cmd[0] == '\n' || cmd[0] == '\0'){
         return DB_ERR_OK;
@@ -92,7 +92,7 @@ err_t process_user_req() {
     int retries = 3;
     int res;
     bool failure = true;
-    SILENT = ~SILENT;
+    //SILENT = ~SILENT;
     // retry loop for user request
     while(retries-- && (res = send(cli.sockfd, cmd, sz, 0))) {
         if (res==sz) {
@@ -112,6 +112,7 @@ err_t process_user_req() {
         send_info_to_user(cli.resp);
         return DB_ERR_GENERIC_FAIL;
     }
+    printf("output_fd = %d\n", app_config.output_fd);
     send_info_to_user(resp);
     return DB_ERR_OK;
 }
