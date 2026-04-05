@@ -60,7 +60,7 @@ extern bool SILENT;
 #define DB_ERR_GENERIC_FAIL         -1  // Command exec/proc FAIL signal
 #define DB_ERR_OK                   0   // Generic exec/proc PASS signal
 #define DB_ERR_SUCCESS              1   // Command execution has been successful
-#define DB_ERR_INVAILD_ARGS         2   // ARGS passed for command are incorrect
+#define DB_ERR_INVALID_ARGS         2   // ARGS passed for command are incorrect
 #define DB_ERR_NOMEM                3   // Unable to allocate memory
 
 #define DB_ERR_KEY_NOTEXIST         4   // Key entry not present
@@ -77,6 +77,7 @@ extern bool SILENT;
 #define DB_ERR_CLIENT_CLOSED        11  // Conn terminated by client
 #define DB_ERR_CLIENT_FATAL         12  // Something went wrong with the client
 
+#define DB_ERR_HELP                 40  // Signal for HELP [did not get a better idea for handling this in `fill_cmd_ctx`]
 #define DB_ERR_EXIT                 41  // EXIT signal for USER FD
 #define DB_ERR_SHUTDOWN             42  // SHUTDOWN signal for ending server
 

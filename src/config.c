@@ -83,7 +83,7 @@ static err_t load_server_config() {
                     // incorrect config won't set master
                     send_info_to_user("Issue parsing master info, incorrect config");
                     free(master);
-                    res = DB_ERR_INVAILD_ARGS;
+                    res = DB_ERR_INVALID_ARGS;
                     continue;
                 }
 
@@ -208,7 +208,7 @@ err_t remove_entry_conn_table(size_t idx) {
     char resp[100];
     if (idx >= (size_t)host_config.connections->cap) {
         sprintf(resp, "Index > used size : SEG FAULT");
-        res = DB_ERR_INVAILD_ARGS;
+        res = DB_ERR_INVALID_ARGS;
         goto ret;
     }
     size_t last = (size_t)host_config.connections->len - 1;

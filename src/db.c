@@ -48,7 +48,9 @@ err_t processCommand(char *req, cmd_ctx *ctx) {
         }
     }
     if (i==N_COMMANDS && handler == NULL) {
-        sprintf(resp, "%s%sCommand %s not a supported CMD. Use HELP cmd to know more%s", BOLD, YELLOW, cmd_arr[0], RESET);
+        // LOG to server log
+        // sprintf(resp, "%s%sCommand %s not a supported CMD. Use HELP cmd to know more%s", BOLD, YELLOW, cmd_arr[0], RESET);
+        sprintf(resp, "ERR");
         res = DB_ERR_CMD_NOTEXIST;
         //ctx->status =  res;
         goto ret;
