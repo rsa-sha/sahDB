@@ -184,7 +184,7 @@ int main(int argc, char** argv) {
             char resp[MAX_RESP_LEN];
             sprintf(resp, "%s%sDaemonzation in non-server mode not allowed%s", RED, BOLD, RESET);
             send_info_to_user(resp);
-            return DB_ERR_INVAILD_ARGS;
+            return DB_ERR_INVALID_ARGS;
         }
         daemonize();
     }

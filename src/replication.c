@@ -333,12 +333,12 @@ err_t add_repl(/* some string from caller */) {
     // I guess'll need it when a replica is added/removed while replication (will work on this later)
     if (replica_port == NULL) {
         sprintf(resp, "The replica node has shared no port for comms; won't add");
-        res = DB_ERR_INVAILD_ARGS;
+        res = DB_ERR_INVALID_ARGS;
         goto ret;
     }
     if (strcmp(host_config.uuid, master_uuid) != 0) {
         sprintf(resp, "The replica node [%s] has the wrong master UUID; won't add", master_uuid);
-        res = DB_ERR_INVAILD_ARGS;
+        res = DB_ERR_INVALID_ARGS;
         goto ret;
     }
     if (replica_hname == NULL || replica_ip == NULL) {

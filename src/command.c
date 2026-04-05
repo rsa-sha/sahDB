@@ -14,8 +14,32 @@ void fill_cmd_ctx(cmd_ctx *ctx, err_t res, const char* resp) {
         send_info_to_user(resp);
         return;// DB_ERR_OK;
     }
+    // Basic Protocol structure setting here for now
+    /*
+     * If res is 0 then we send OK
+     * else:
+     *      if signal is for exit or shutdown [at client so it can close]
+     *      else we send ERR
+     */
+    // TODO: we write the responses to the server process logs [kind of history of operations]
     strcpy(ctx->resp, resp);
     ctx->status = res;
+    // Thee responses have to be handled in the commands themselves or need signals for command types
+    /*
+    if (ctx->status == DB_ERR_OK) {
+        strcpy(ctx->resp, "OK");
+    } else if (ctx->status == DB_ERR_SHUTDOWN) {
+        strcpy(ctx->resp, "Goodbye...");
+    } else if (ctx->status == DB_ERR_EXIT) {
+        strcpy(ctx->resp, "Bye...");
+    } else if (ctx->status == DB_ERR_HELP) {
+        strcpy(ctx->resp, resp);
+        ctx->status = DB_ERR_OK;
+    }
+    else {
+        strcpy(ctx->resp, "ERR");
+    }
+    */
     return;// DB_ERR_OK;
 }
 
@@ -33,12 +57,14 @@ err_t exit_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
     char resp[MAX_RESP_LEN] = "";
     err_t res = DB_ERR_OK;
     if (argc!=1) {
-        sprintf(resp, "%sIncorrect number of args passed, run HELP EXIT%s", RED, RESET);
+        // LOG to server log
+        //sprintf(resp, "%sIncorrect number of args passed, run HELP EXIT%s", RED, RESET);
+        sprintf(resp, "%sERR%s", RED, RESET);
         //send_info_to_user(resp);
-        res = DB_ERR_INVAILD_ARGS;
+        res = DB_ERR_INVALID_ARGS;
         goto ret;
     }
-    sprintf(resp, "%s%sExiting ...%s", RED, BOLD, RESET);
+    sprintf(resp, "%s%sBye...%s", RED, BOLD, RESET);
     res = DB_ERR_EXIT;
 ret:
     fill_cmd_ctx(ctx, res, resp);
@@ -50,12 +76,14 @@ err_t shutdown_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
     char resp[MAX_RESP_LEN] = "";
     err_t res = DB_ERR_OK;
     if (argc!=1) {
-        sprintf(resp, "%sIncorrect number of args passed, run HELP EXIT%s", RED, RESET);
+        // LOG to server log
+        //sprintf(resp, "%sIncorrect number of args passed, run HELP EXIT%s", RED, RESET);
+        sprintf(resp, "%sERR%s", RED, RESET);
         //send_info_to_user(err);
-        res = DB_ERR_INVAILD_ARGS;
+        res = DB_ERR_INVALID_ARGS;
         goto ret;
     }
-    sprintf(resp, "%s%sShutting down server ...%s", RED, BOLD, RESET);
+    sprintf(resp, "%s%sGoodbye...%s", RED, BOLD, RESET);
     res = DB_ERR_SHUTDOWN;
 ret:
     fill_cmd_ctx(ctx, res, resp);
@@ -68,9 +96,11 @@ err_t set_key_val_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
     err_t res = 0;
     char resp[MAX_RESP_LEN] = "";
     if (argc!=3) {
-        sprintf(resp,"%sIncorrect number of args passed, run HELP SET%s", RED, RESET);
+        // LOG to server log
+        //sprintf(resp,"%sIncorrect number of args passed, run HELP SET%s", RED, RESET);
+        sprintf(resp,"%sERR%s", RED, RESET);
         // send_info_to_user(err);
-        res = DB_ERR_INVAILD_ARGS;
+        res = DB_ERR_INVALID_ARGS;
         goto ret;
     }
     char *key = cmd_arr[1];
@@ -87,8 +117,10 @@ err_t get_val_from_key_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
     err_t res = 0;
     char resp[MAX_RESP_LEN] = "";
     if (argc<2) {
+        // LOG to server log
+        //sprintf(resp, "%sIncorrect number of args passed, run HELP GET%s", RED, RESET);
         sprintf(resp, "%sIncorrect number of args passed, run HELP GET%s", RED, RESET);
-        res = DB_ERR_INVAILD_ARGS;
+        res = DB_ERR_INVALID_ARGS;
         goto ret;
     }
     if (argc == 2) {
@@ -110,7 +142,7 @@ extern commandNode commands[];
 err_t help(cmd_ctx *ctx) {
     char resp[MAX_RESP_LEN];
     size_t resp_idx = 0;
-    err_t res = DB_ERR_OK;
+    err_t res = DB_ERR_HELP;
     size_t max_cmd_len = 0;
     size_t max_desc_len = 0;
     /* 1) Compute column widths */
@@ -162,6 +194,8 @@ err_t help_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
         help(ctx);
     } else if (argc == 2 && strcmp(cmd_arr[1],"")!=0) {
         printSubCommands(cmd_arr[1]);
+        // not supported yet [err sig for CLI]
+        return DB_ERR_INVALID_ARGS;
     }
     return 0;
 }
@@ -174,7 +208,7 @@ err_t exists_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
     if (argc!=2) {
         sprintf(resp, "%sIncorrect number of args passed, run HELP EXISTS%s", RED, RESET);
         send_info_to_user(resp);
-        res = DB_ERR_INVAILD_ARGS;
+        res = DB_ERR_INVALID_ARGS;
         goto ret;
     }
     char *key = cmd_arr[1];
@@ -190,9 +224,11 @@ err_t delete_key_value_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
     char resp[MAX_RESP_LEN] = "";
     err_t res = 0;
     if (argc!=2) {
-        sprintf(resp, "%sIncorrect number of args passed, run HELP DELETE%s", RED, RESET);
+        // LOG to server log
+        // sprintf(resp, "%sIncorrect number of args passed, run HELP DELETE%s", RED, RESET);
+        sprintf(resp, "ERR");
         send_info_to_user(resp);
-        res = DB_ERR_INVAILD_ARGS;
+        res = DB_ERR_INVALID_ARGS;
         goto ret;
     }
     char *key = cmd_arr[1];
@@ -207,8 +243,10 @@ err_t expire_key_val(int argc, char **cmd_arr, cmd_ctx *ctx) {
     char resp[MAX_RESP_LEN] = "";
     err_t res = 0;
     if (argc!=3) {
-        sprintf(resp, "%sIncorrect number of args passed, run HELP EXPIRE%s", RED, RESET);
-        res = DB_ERR_INVAILD_ARGS;
+        // LOG to server log
+        // sprintf(resp, "%sIncorrect number of args passed, run HELP EXPIRE%s", RED, RESET);
+        res = DB_ERR_INVALID_ARGS;
+        sprintf(resp, "ERR");
         send_info_to_user(resp);
         goto ret;
     }
@@ -229,15 +267,19 @@ err_t save_helper(int argc, char **cmd_arr, cmd_ctx *ctx) {
     char resp[MAX_RESP_LEN] = "";
     err_t res = 0;
     if (argc!=1) {
-        sprintf(resp, "%sIncorrect number of args passed, run HELP SAVE%s", RED, RESET);
+        // LOG to server log
+        // sprintf(resp, "%sIncorrect number of args passed, run HELP SAVE%s", RED, RESET);
         //send_info_to_user(resp);
-        res = DB_ERR_INVAILD_ARGS;
+        sprintf(resp, "OK");
+        res = DB_ERR_INVALID_ARGS;
         goto ret;
     }
     res = fetch_dataset_from_memory();
 ret:
     if (ctx)
-        sprintf(resp, "Data from disk written to %s", SAVE_FILE);
+        sprintf(resp, "OK");
+        // LOG to server log
+        // sprintf(resp, "Data from disk written to %s", SAVE_FILE);
     fill_cmd_ctx(ctx, res, resp);
     return res;
 }

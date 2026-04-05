@@ -30,7 +30,7 @@ err_t init_cli_config(int argc, char **argv) {
     while(i<argc) {
         if ((strcasecmp(argv[i], "--port")==0 || strcasecmp(argv[i], "-p")==0) && i+1<argc) {
             if(is_port(argv[i+1]) != DB_ERR_OK){
-                res = DB_ERR_INVAILD_ARGS;
+                res = DB_ERR_INVALID_ARGS;
                 goto ret;
             }
             cli.port = atoi(argv[i+1]);
@@ -59,7 +59,7 @@ err_t handshake_with_server() {
     if (inet_pton(AF_INET, cli.ip, &server.sin_addr) != 1) {
         strcpy(cli.resp, "Invalid server IP");
         close(sock);
-        return DB_ERR_INVAILD_ARGS;
+        return DB_ERR_INVALID_ARGS;
     }
     if (connect(sock, (struct sockaddr*)&server, sizeof(server)) < 0) {
         strcpy(cli.resp, "Connection failed");
@@ -130,12 +130,12 @@ int main(int argc, char **argv) {
     err_t ret_code = DB_ERR_OK;
     if (argc < 2) {
         printf("Usage: %s %s\n", argv[0], usage_str());
-        return DB_ERR_INVAILD_ARGS;
+        return DB_ERR_INVALID_ARGS;
     }
     if ((ret_code = init_cli_config(argc, argv))!=DB_ERR_OK)return ret_code;
     if(cli.port == 0) {
         strcpy(cli.resp, "Invalid port number");
-        ret_code = DB_ERR_INVAILD_ARGS;
+        ret_code = DB_ERR_INVALID_ARGS;
         goto ret;
     }
     if (cli.local==true)cli.ip = "127.0.0.1";

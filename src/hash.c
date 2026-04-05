@@ -70,15 +70,22 @@ err_t hash_get_expiry(char *k, cmd_ctx *ctx) {
     while (temp!=NULL && strcmp(temp->key, k)!=0)
         temp = temp->next;
     if (temp==NULL || strcmp(temp->key,k)!=0 || lazy_expire_and_delete(temp)==DB_ERR_KEY_EXPIRED) {
-        sprintf(resp, "%sValue corresponding to key %s not present in DB%s", RED, k, RESET);
+        // LOG to server log
+        //sprintf(resp, "%sValue corresponding to key %s not present in DB%s", RED, k, RESET);
+        sprintf(resp, "%sERR%s", RED, RESET);
         res = DB_ERR_KEY_NOTEXIST;
         goto ret;
     }
     if (strcmp(temp->key, k)==0) {
-        if (temp->expiry!=-1)
-            sprintf(resp, "Expiry at UNIX time %zu",temp->expiry);
-        else
-            sprintf(resp, "%s%sNo expiry set for %s%s", BOLD, RED, k, RESET);
+        if (temp->expiry!=-1) {
+            // LOG to server log
+            //sprintf(resp, "Expiry at UNIX time %zu",temp->expiry);
+            sprintf(resp, "%zu",temp->expiry);
+        } else {
+            // LOG to server log
+            //sprintf(resp, "%s%sNo expiry set for %s%s", BOLD, RED, k, RESET);
+            sprintf(resp, "%sNULL%s", RED, RESET);
+        }
     }
 ret:
     fill_cmd_ctx(ctx, res, resp);
@@ -93,7 +100,9 @@ err_t hash_get(char *k, cmd_ctx *ctx) {
     while (temp!=NULL && strcmp(temp->key, k)!=0)
         temp = temp->next;
     if (temp==NULL || strcmp(temp->key,k)!=0 || lazy_expire_and_delete(temp)==DB_ERR_KEY_EXPIRED) {
-        sprintf(resp, "%sValue corresponding to key %s not present in DB%s", RED, k, RESET);
+        // LOG to server log
+        //sprintf(resp, "%sValue corresponding to key %s not present in DB%s", RED, k, RESET);
+        sprintf(resp, "ERR");
         res = DB_ERR_KEY_NOTEXIST;
         goto ret;
     }
@@ -135,7 +144,9 @@ err_t hash_delete(char *k, cmd_ctx *ctx) {
     }
     // check if the key exists or not
     if (cur==NULL) {
-        sprintf(resp, "%sNo entry corresponding to key %s in DB%s", RED, k, RESET);
+        // LOG to server log
+        // sprintf(resp, "%sNo entry corresponding to key %s in DB%s", RED, k, RESET);
+        sprintf(resp, "ERR");
         res = DB_ERR_KEY_NOTEXIST;
         goto ret;
     }
@@ -153,7 +164,9 @@ err_t hash_delete(char *k, cmd_ctx *ctx) {
     free(cur->key);
     free(cur->value);
     free(cur);
-    sprintf(resp, "%sEntry corresponding to key %s removed from DB%s", GREEN, k, RESET);
+    // LOG to server log
+    // sprintf(resp, "%sEntry corresponding to key %s removed from DB%s", GREEN, k, RESET);
+    sprintf(resp, "OK");
 ret:
     fill_cmd_ctx(ctx, res, resp);
     return res;
@@ -173,15 +186,21 @@ err_t hash_insert(char *k, char *v, cmd_ctx *ctx) {
     err_t res = add_kv_in_arr(idx, kv);
     char resp[MAX_RESP_LEN];
     if (res == 0) {
-        sprintf(resp, "Added key %s and value %s in DB", kv->key, kv->value);
+        // LOG to server log
+        // sprintf(resp, "Added key %s and value %s in DB", kv->key, kv->value);
+        sprintf(resp, "OK");
     } else if (res == DB_ERR_KEY_EXISTS) {
-        sprintf(resp, "Updated key %s with value %s in DB", k, v);
+        // LOG to server log
+        //sprintf(resp, "Updated key %s with value %s in DB", k, v);
+        sprintf(resp, "OK");
         free(kv->key);
         free(kv->value);
         free(kv);
         res = 0; // Return success for update
     } else if (res == ERR_FULL) {
-        sprintf(resp, "DB storage is full");
+        // LOG to server log
+        // sprintf(resp, "DB storage is full");
+        sprintf(resp, "ERR");
         free(kv->key);
         free(kv->value);
         free(kv);
@@ -214,7 +233,9 @@ err_t hash_update_expiry(char *key, time_t duration, cmd_ctx *ctx) {
         kv = kv->next;
     if (kv==NULL || lazy_expire_and_delete(kv)==DB_ERR_KEY_EXPIRED) {
         res = DB_ERR_KEY_NOTEXIST;
-        sprintf(resp, "%sNo entry for key %s in DB%s", RED, key, RESET);
+        // LOG to server log
+        // sprintf(resp, "%sNo entry for key %s in DB%s", RED, key, RESET);
+        sprintf(resp, "NULL");
     } else {
         // If already in heap, remove it first
         if (kv->heap_index != SIZE_MAX) {
@@ -226,10 +247,14 @@ err_t hash_update_expiry(char *key, time_t duration, cmd_ctx *ctx) {
         // adding KV to ttl
         res = heap_insert(ttl, kv);
         if (res != DB_ERR_OK) {
-            sprintf(resp, "%sUnable to set expiry for key %s%s", RED, key, RESET);
+            // LOG to server log
+            // sprintf(resp, "%sUnable to set expiry for key %s%s", RED, key, RESET);
+            sprintf(resp, "ERR");
             goto ret;
         }
-        sprintf(resp, "%sUpdated expiry time of key %s%s", GREEN, key, RESET);
+        // LOG to server log
+        // sprintf(resp, "%sUpdated expiry time of key %s%s", GREEN, key, RESET);
+        sprintf(resp, "OK");
     }
 ret:
     fill_cmd_ctx(ctx, res, resp);
