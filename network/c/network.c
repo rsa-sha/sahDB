@@ -204,6 +204,9 @@ int main(int argc, char** argv) {
                 host_config.server_port = 5050;
         }
     }
+    // logging
+    log_f *server_log = calloc(1, sizeof(log_f));
+    log_setup(server_log, F_USER, "server.log");
     if (host_config.server_port > 0) {
         run_as_server();
         // run_as_server(host_config.server_port);

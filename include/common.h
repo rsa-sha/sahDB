@@ -19,6 +19,9 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
+// LOGGER HEADER
+#include "logger.h"
+
 #define err_t int
 #define ERR_FULL 100
 // IO_Related Methods
